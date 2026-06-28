@@ -14,6 +14,7 @@
 #include "util/parented_ptr.h"
 #include "util/performancetimer.h"
 
+class ActiveDeckControl;
 class Auxiliary;
 class BaseTrackPlayer;
 class ControlObject;
@@ -296,6 +297,7 @@ class PlayerManager : public PlayerManagerInterface {
     std::unique_ptr<ControlObject> m_pCONumPreviewDecks;
     std::unique_ptr<ControlObject> m_pCONumMicrophones;
     std::unique_ptr<ControlObject> m_pCONumAuxiliaries;
+    std::unique_ptr<ActiveDeckControl> m_pActiveDeckControl;
     parented_ptr<ControlProxy> m_pAutoDjEnabled;
 
     TrackAnalysisScheduler::Pointer m_pTrackAnalysisScheduler;

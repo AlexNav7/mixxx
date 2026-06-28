@@ -9,6 +9,7 @@
 #include "engine/enginemixer.h"
 #include "library/library.h"
 #include "library/trackcollectionmanager.h"
+#include "mixer/activedeckcontrol.h"
 #include "mixer/auxiliary.h"
 #include "mixer/deck.h"
 #include "mixer/microphone.h"
@@ -134,6 +135,13 @@ PlayerManager::PlayerManager(UserSettingsPointer pConfig,
 
     // This is parented to the PlayerManager so does not need to be deleted
     m_pSamplerBank = new SamplerBank(m_pConfig, this);
+
+    // Tracks the active/focused deck and mirrors it to [ChannelN],focus.
+    m_pActiveDeckControl = std::make_unique<ActiveDeckControl>(this, m_pConfig);
+    connect(this,
+            &PlayerManager::numberOfDecksChanged,
+            m_pActiveDeckControl.get(),
+            &ActiveDeckControl::slotNumberOfDecksChanged);
 
     m_cloneTimer.start();
 }
