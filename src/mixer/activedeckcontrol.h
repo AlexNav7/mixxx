@@ -51,6 +51,9 @@ class ActiveDeckControl : public QObject {
     void applyActiveDeck(int deckNumberOneBased);
     void updateFocusMirrors();
     int deckCount() const;
+    // Forward a [ActiveDeck],<key> change to [Channel<active>],<key>,
+    // preserving press/release (button) semantics.
+    void forwardToActiveDeck(const QString& key, double value);
 
     PlayerManager* m_pPlayerManager;
     UserSettingsPointer m_pConfig;
@@ -60,6 +63,8 @@ class ActiveDeckControl : public QObject {
     // One focus control per deck; index 0 -> [Channel1],focus
     std::vector<std::unique_ptr<ControlObject>> m_focusControls;
     // One focus-request control per deck; setting it active makes that deck the
-    // active deck. Used by triggers (jog, later click / number keys).
+    // active deck. Used by triggers (click, later number keys).
     std::vector<std::unique_ptr<ControlObject>> m_focusRequestControls;
+    // [ActiveDeck],<action> controls that forward to the active deck.
+    std::vector<std::unique_ptr<ControlObject>> m_actionControls;
 };

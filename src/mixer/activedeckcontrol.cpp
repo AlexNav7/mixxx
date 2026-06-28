@@ -4,6 +4,8 @@
 #include <utility>
 
 #include "control/controlobject.h"
+#include "control/controlpushbutton.h"
+#include "controllers/midi/midimessage.h"
 #include "mixer/playermanager.h"
 #include "util/math.h"
 
@@ -37,6 +39,41 @@ ActiveDeckControl::ActiveDeckControl(PlayerManager* pPlayerManager,
     m_pCOActiveDeck->connectValueChangeRequest(this,
             &ActiveDeckControl::slotActiveDeckChangeRequest,
             Qt::DirectConnection);
+
+    // [ActiveDeck] action controls: each forwards to the active deck's
+    // same-named control, preserving press/release (button) semantics. These
+    // can be mapped from the keyboard, MIDI controllers or skins.
+    const QString actionKeys[] = {
+            QStringLiteral("play"),
+            QStringLiteral("cue_default"),
+            QStringLiteral("beatsync"),
+            QStringLiteral("hotcue_1_activate"),
+            QStringLiteral("hotcue_2_activate"),
+            QStringLiteral("hotcue_3_activate"),
+            QStringLiteral("hotcue_4_activate"),
+    };
+    for (const QString& key : actionKeys) {
+        // ControlPushButton (not a plain ControlObject) so it accepts
+        // keyboard/MIDI input via setValueFromMidi.
+        auto pControl = std::make_unique<ControlPushButton>(ConfigKey(kActiveDeckGroup, key));
+        connect(pControl.get(),
+                &ControlObject::valueChanged,
+                this,
+                [this, key](double v) { forwardToActiveDeck(key, v); });
+        m_actionControls.push_back(std::move(pControl));
+    }
+}
+
+void ActiveDeckControl::forwardToActiveDeck(const QString& key, double value) {
+    const QString group = activeDeckGroup();
+    if (group.isEmpty()) {
+        return;
+    }
+    ControlObject* pTarget = ControlObject::getControl(ConfigKey(group, key));
+    if (pTarget) {
+        pTarget->setValueFromMidi(
+                value != 0.0 ? MidiOpCode::NoteOn : MidiOpCode::NoteOff, value);
+    }
 }
 
 ActiveDeckControl::~ActiveDeckControl() = default;
