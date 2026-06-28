@@ -5,6 +5,20 @@
     <MaximumSize>,230</MaximumSize>
     <Children>
 
+      <!-- Active-deck indicator: a colored bar shown above the active deck. -->
+      <WidgetGroup>
+        <ObjectName>DeckFocusBar</ObjectName>
+        <Size>0e,4f</Size>
+        <Style>
+          #DeckFocusBar { background-color: #222222; }
+          #DeckFocusBar[highlight="1"] { background-color: #ff9d00; }
+        </Style>
+        <Connection>
+          <ConfigKey>[Channel<Variable name="ChanNum"/>],focus</ConfigKey>
+          <BindProperty>highlight</BindProperty>
+        </Connection>
+      </WidgetGroup>
+
       <Template src="skins:LateNight/decks/deck_singletons.xml">
         <SetVariable name="Type">deck</SetVariable>
         <SetVariable name="Group">[Channel<Variable name="ChanNum"/>]</SetVariable>

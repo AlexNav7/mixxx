@@ -35,6 +35,10 @@ class ActiveDeckControl : public QObject {
     /// No-op if `group` is not a deck group.
     void setActiveDeckByGroup(const QString& group);
 
+    /// Called when a track is loaded into `group`. Makes that deck active if
+    /// the `[ActiveDeck],follow_track_load` setting is enabled.
+    void onTrackLoaded(const QString& group);
+
   public slots:
     /// Create focus controls for newly added decks and refresh the mirrors.
     void slotNumberOfDecksChanged(int decks);
@@ -51,6 +55,8 @@ class ActiveDeckControl : public QObject {
     PlayerManager* m_pPlayerManager;
     UserSettingsPointer m_pConfig;
     std::unique_ptr<ControlObject> m_pCOActiveDeck;
+    // [ActiveDeck],follow_track_load setting (1 = loading a track focuses its deck)
+    std::unique_ptr<ControlObject> m_pCOFollowTrackLoad;
     // One focus control per deck; index 0 -> [Channel1],focus
     std::vector<std::unique_ptr<ControlObject>> m_focusControls;
 };

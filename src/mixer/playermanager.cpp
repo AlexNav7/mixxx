@@ -374,6 +374,14 @@ void PlayerManager::addDeckInner() {
                 &PlayerManager::slotAnalyzeTrack);
     }
 
+    // Make the deck active when a track is loaded into it (if enabled).
+    connect(pDeck,
+            &BaseTrackPlayer::newTrackLoaded,
+            m_pActiveDeckControl.get(),
+            [this, group = groupForDeck(deckIndex)](const TrackPointer&) {
+                m_pActiveDeckControl->onTrackLoaded(group);
+            });
+
     m_players[handleGroup.handle()] = pDeck;
     m_decks.append(pDeck);
 

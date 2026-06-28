@@ -11,6 +11,7 @@
 namespace {
 const QString kAppGroup = QStringLiteral("[App]");
 const QString kLegacyGroup = QStringLiteral("[Master]");
+const QString kActiveDeckGroup = QStringLiteral("[ActiveDeck]");
 } // namespace
 
 ActiveDeckControl::ActiveDeckControl(PlayerManager* pPlayerManager,
@@ -24,7 +25,13 @@ ActiveDeckControl::ActiveDeckControl(PlayerManager* pPlayerManager,
                   true,   // bIgnoreNops
                   false,  // bTrack
                   true,   // bPersist
-                  1.0)) { // default: deck 1
+                  1.0)),  // default: deck 1
+          m_pCOFollowTrackLoad(std::make_unique<ControlObject>(
+                  ConfigKey(kActiveDeckGroup, QStringLiteral("follow_track_load")),
+                  true,   // bIgnoreNops
+                  false,  // bTrack
+                  true,   // bPersist
+                  1.0)) { // default: enabled
     m_pCOActiveDeck->addAlias(ConfigKey(kLegacyGroup, QStringLiteral("active_deck")));
     m_pCOActiveDeck->connectValueChangeRequest(this,
             &ActiveDeckControl::slotActiveDeckChangeRequest,
@@ -67,6 +74,12 @@ void ActiveDeckControl::setActiveDeckByGroup(const QString& group) {
 
 void ActiveDeckControl::slotActiveDeckChangeRequest(double v) {
     applyActiveDeck(static_cast<int>(std::lround(v)));
+}
+
+void ActiveDeckControl::onTrackLoaded(const QString& group) {
+    if (m_pCOFollowTrackLoad && m_pCOFollowTrackLoad->get() != 0.0) {
+        setActiveDeckByGroup(group);
+    }
 }
 
 void ActiveDeckControl::slotNumberOfDecksChanged(int decks) {
