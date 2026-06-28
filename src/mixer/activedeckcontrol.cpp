@@ -1,6 +1,7 @@
 #include "mixer/activedeckcontrol.h"
 
 #include <cmath>
+#include <utility>
 
 #include "control/controlobject.h"
 #include "mixer/playermanager.h"
@@ -83,11 +84,28 @@ void ActiveDeckControl::onTrackLoaded(const QString& group) {
 }
 
 void ActiveDeckControl::slotNumberOfDecksChanged(int decks) {
-    // Create focus controls for any newly added decks.
+    // Create focus + focus_request controls for any newly added decks.
     while (static_cast<int>(m_focusControls.size()) < decks) {
         const int idx = static_cast<int>(m_focusControls.size());
+        const QString group = PlayerManager::groupForDeck(idx);
+
+        // Output mirror: 1 on the active deck, 0 elsewhere (skins bind this).
         m_focusControls.push_back(std::make_unique<ControlObject>(
-                ConfigKey(PlayerManager::groupForDeck(idx), QStringLiteral("focus"))));
+                ConfigKey(group, QStringLiteral("focus"))));
+
+        // Input request: any trigger sets this to make this deck active.
+        auto pRequest = std::make_unique<ControlObject>(
+                ConfigKey(group, QStringLiteral("focus_request")));
+        const int deckNumber = idx + 1;
+        connect(pRequest.get(),
+                &ControlObject::valueChanged,
+                this,
+                [this, deckNumber](double v) {
+                    if (v != 0.0) {
+                        applyActiveDeck(deckNumber);
+                    }
+                });
+        m_focusRequestControls.push_back(std::move(pRequest));
     }
     // Re-apply to clamp the (possibly persisted) value and refresh mirrors.
     applyActiveDeck(static_cast<int>(m_pCOActiveDeck->get()));

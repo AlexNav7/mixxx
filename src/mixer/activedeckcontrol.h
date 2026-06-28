@@ -59,4 +59,7 @@ class ActiveDeckControl : public QObject {
     std::unique_ptr<ControlObject> m_pCOFollowTrackLoad;
     // One focus control per deck; index 0 -> [Channel1],focus
     std::vector<std::unique_ptr<ControlObject>> m_focusControls;
+    // One focus-request control per deck; setting it active makes that deck the
+    // active deck. Used by triggers (jog, later click / number keys).
+    std::vector<std::unique_ptr<ControlObject>> m_focusRequestControls;
 };
