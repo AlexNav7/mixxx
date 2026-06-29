@@ -19,6 +19,24 @@
     <Layout>horizontal</Layout>
     <SizePolicy>me,me</SizePolicy>
     <Children>
+      <!-- Active-deck marker: colored line when this deck is active. -->
+      <WidgetGroup>
+        <ObjectName>WaveformFocusLine</ObjectName>
+        <Size>6f,0me</Size>
+        <Style>
+          #WaveformFocusLine { background-color: transparent; }
+          #WaveformFocusLine[highlight="1"] { background-color: #ff9d00; }
+          #WaveformFocusLine[highlight="2"] { background-color: #00b4ff; }
+          #WaveformFocusLine[highlight="3"] { background-color: #2ecc40; }
+          #WaveformFocusLine[highlight="4"] { background-color: #ff4fd8; }
+          #WaveformFocusLine[highlight="5"] { background-color: #ff3b30; }
+          #WaveformFocusLine[highlight="6"] { background-color: #ffe000; }
+        </Style>
+        <Connection>
+          <ConfigKey><Variable name="Group"/>,focus</ConfigKey>
+          <BindProperty>highlight</BindProperty>
+        </Connection>
+      </WidgetGroup>
       <WidgetGroup>
         <RequiresStem>true</RequiresStem>
         <ObjectName>StemControls</ObjectName>
