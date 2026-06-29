@@ -46,6 +46,9 @@ class ActiveDeckControl : public QObject {
   private slots:
     /// Handles external requests to set `[App],active_deck` (keyboard/MIDI/etc.).
     void slotActiveDeckChangeRequest(double v);
+    /// Validates `[ActiveDeck],highlight_color`: accept 1..N, ignore anything
+    /// else (e.g. the 0 a momentary skin button writes on release).
+    void slotHighlightColorChangeRequest(double v);
 
   private:
     void applyActiveDeck(int deckNumberOneBased);
@@ -60,6 +63,10 @@ class ActiveDeckControl : public QObject {
     std::unique_ptr<ControlObject> m_pCOActiveDeck;
     // [ActiveDeck],follow_track_load setting (1 = loading a track focuses its deck)
     std::unique_ptr<ControlObject> m_pCOFollowTrackLoad;
+    // [ActiveDeck],highlight_color: 1..N palette index for the active-deck color.
+    // The active deck's [ChannelN],focus is set to this index (0 = inactive),
+    // so skins can pick a color via QSS [highlight="N"]/[value="N"].
+    std::unique_ptr<ControlObject> m_pCOHighlightColor;
     // One focus control per deck; index 0 -> [Channel1],focus
     std::vector<std::unique_ptr<ControlObject>> m_focusControls;
     // One focus-request control per deck; setting it active makes that deck the

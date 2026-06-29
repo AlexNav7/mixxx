@@ -10,7 +10,7 @@
       <PushButton>
         <ObjectName>DeckFocusBar</ObjectName>
         <Size>0e,18f</Size>
-        <NumberStates>2</NumberStates>
+        <NumberStates>7</NumberStates>
         <Text>ACTIVE</Text>
         <Style>
           #DeckFocusBar {
@@ -20,10 +20,12 @@
             font: bold 9px;
             qproperty-alignment: 'AlignCenter';
           }
-          #DeckFocusBar[value="1"] {
-            background-color: #ff9d00;
-            color: #1a1a1a;
-          }
+          #DeckFocusBar[value="1"] { background-color: #ff9d00; color: #1a1a1a; }
+          #DeckFocusBar[value="2"] { background-color: #00b4ff; color: #1a1a1a; }
+          #DeckFocusBar[value="3"] { background-color: #2ecc40; color: #1a1a1a; }
+          #DeckFocusBar[value="4"] { background-color: #ff4fd8; color: #1a1a1a; }
+          #DeckFocusBar[value="5"] { background-color: #ff3b30; color: #ffffff; }
+          #DeckFocusBar[value="6"] { background-color: #ffe000; color: #1a1a1a; }
         </Style>
         <Connection>
           <ConfigKey>[Channel<Variable name="ChanNum"/>],focus_request</ConfigKey>
@@ -48,6 +50,11 @@
         <Style>
           #DeckBorderEdge { background-color: transparent; }
           #DeckBorderEdge[highlight="1"] { background-color: #ff9d00; }
+          #DeckBorderEdge[highlight="2"] { background-color: #00b4ff; }
+          #DeckBorderEdge[highlight="3"] { background-color: #2ecc40; }
+          #DeckBorderEdge[highlight="4"] { background-color: #ff4fd8; }
+          #DeckBorderEdge[highlight="5"] { background-color: #ff3b30; }
+          #DeckBorderEdge[highlight="6"] { background-color: #ffe000; }
         </Style>
         <Children>
 
