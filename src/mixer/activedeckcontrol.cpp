@@ -44,13 +44,26 @@ ActiveDeckControl::ActiveDeckControl(PlayerManager* pPlayerManager,
     // same-named control, preserving press/release (button) semantics. These
     // can be mapped from the keyboard, MIDI controllers or skins.
     const QString actionKeys[] = {
+            // transport
             QStringLiteral("play"),
+            QStringLiteral("stop"),
             QStringLiteral("cue_default"),
+            QStringLiteral("cue_set"),
             QStringLiteral("beatsync"),
+            // hotcues: activate + set
             QStringLiteral("hotcue_1_activate"),
             QStringLiteral("hotcue_2_activate"),
             QStringLiteral("hotcue_3_activate"),
             QStringLiteral("hotcue_4_activate"),
+            QStringLiteral("hotcue_1_set"),
+            QStringLiteral("hotcue_2_set"),
+            QStringLiteral("hotcue_3_set"),
+            QStringLiteral("hotcue_4_set"),
+            // beatjump (jump X beats; size_halve/double change X)
+            QStringLiteral("beatjump_backward"),
+            QStringLiteral("beatjump_forward"),
+            QStringLiteral("beatjump_size_halve"),
+            QStringLiteral("beatjump_size_double"),
     };
     for (const QString& key : actionKeys) {
         // ControlPushButton (not a plain ControlObject) so it accepts
