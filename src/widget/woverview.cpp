@@ -15,6 +15,8 @@
 #include "mixer/playermanager.h"
 #include "moc_woverview.cpp"
 #include "preferences/colorpalettesettings.h"
+#include <QWheelEvent>
+
 #include "audio/frame.h"
 #include "track/beats.h"
 #include "track/track.h"
@@ -70,6 +72,7 @@ WOverview::WOverview(
           m_maxPixelPos(1.0),
           m_analyzerProgress(kAnalyzerProgressUnknown),
           m_trackLoaded(false),
+          m_phraseOffset(0),
           m_pHoveredMark(nullptr),
           m_scaleFactor(1.0),
           m_trackSampleRateControl(
@@ -370,6 +373,14 @@ void WOverview::slotTrackLoaded(TrackPointer pTrack) {
     //qDebug() << "WOverview::slotTrackLoaded()" << m_pCurrentTrack.get() << pTrack.get();
     DEBUG_ASSERT(m_pCurrentTrack == pTrack);
     m_trackLoaded = true;
+    // Restore this track's saved phrase-line offset (per-track, persisted).
+    m_phraseOffset = 0;
+    if (m_pCurrentTrack && m_pCurrentTrack->getId().isValid()) {
+        m_phraseOffset = m_pConfig->getValue(
+                ConfigKey(QStringLiteral("[PhraseOffsets]"),
+                        m_pCurrentTrack->getId().toString()),
+                0);
+    }
     if (m_pCurrentTrack) {
         updateCues(m_pCurrentTrack->getCuePoints());
     }
@@ -611,6 +622,26 @@ void WOverview::mouseReleaseEvent(QMouseEvent* e) {
         // prevent accidental seeking when trying to right click a hotcue.
         m_bTimeRulerActive = false;
     }
+}
+
+void WOverview::wheelEvent(QWheelEvent* e) {
+    // Shift the phrase lines (every 32 beats) forward/backward by one beat per
+    // wheel notch, to align them with the song's phrasing.
+    const int delta = e->angleDelta().y();
+    if (delta == 0) {
+        e->ignore();
+        return;
+    }
+    m_phraseOffset += (delta > 0) ? 1 : -1;
+    // Persist per-track so the alignment is remembered.
+    if (m_pCurrentTrack && m_pCurrentTrack->getId().isValid()) {
+        m_pConfig->set(
+                ConfigKey(QStringLiteral("[PhraseOffsets]"),
+                        m_pCurrentTrack->getId().toString()),
+                ConfigValue(QString::number(m_phraseOffset)));
+    }
+    update();
+    e->accept();
 }
 
 void WOverview::mousePressEvent(QMouseEvent* e) {
@@ -901,6 +932,9 @@ void WOverview::drawBeatMarkers(QPainter* pPainter) {
 
     // A faint full-height line every N beats, to see phrases/sections at a glance.
     constexpr int kBeatsPerMarker = 32;
+    // m_phraseOffset (mouse wheel) shifts which beats get a line.
+    const int offsetMod =
+            ((m_phraseOffset % kBeatsPerMarker) + kBeatsPerMarker) % kBeatsPerMarker;
 
     QLineF line;
     pPainter->setPen(QPen(m_axesColor, m_scaleFactor));
@@ -917,7 +951,7 @@ void WOverview::drawBeatMarkers(QPainter* pPainter) {
         if (beatSamplePos > trackSamples) {
             break;
         }
-        if (beatCount == 0 || (beatCount % kBeatsPerMarker) != 0) {
+        if ((beatCount % kBeatsPerMarker) != offsetMod) {
             continue;
         }
         const double xPos = valueToPosition(beatSamplePos / trackSamples);

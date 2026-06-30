@@ -49,6 +49,7 @@ class WOverview : public WWidget, public TrackDropTarget {
     void mouseMoveEvent(QMouseEvent* e) override;
     void mouseReleaseEvent(QMouseEvent* e) override;
     void mousePressEvent(QMouseEvent* e) override;
+    void wheelEvent(QWheelEvent* e) override;
     void leaveEvent(QEvent* event) override;
     void paintEvent(QPaintEvent* /*unused*/) override;
     void resizeEvent(QResizeEvent* /*unused*/) override;
@@ -180,6 +181,8 @@ class WOverview : public WWidget, public TrackDropTarget {
 
     AnalyzerProgress m_analyzerProgress;
     bool m_trackLoaded;
+    // Offset (in beats) for the phrase lines, to align them by mouse wheel.
+    int m_phraseOffset;
     WaveformMarkPointer m_pHoveredMark;
     double m_scaleFactor;
 
