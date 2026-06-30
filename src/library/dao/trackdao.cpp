@@ -454,6 +454,7 @@ void TrackDAO::addTracksPrepare() {
             "comment,"
             "url,"
             "rating,"
+            "phrase_offset,"
             "key,"
             "key_id,"
             "tuning_frequency_hz,"
@@ -503,6 +504,7 @@ void TrackDAO::addTracksPrepare() {
             ":comment,"
             ":url,"
             ":rating,"
+            ":phrase_offset,"
             ":key,"
             ":key_id,"
             ":tuning_frequency_hz,"
@@ -608,6 +610,7 @@ void bindTrackLibraryValues(
     pTrackLibraryQuery->bindValue(":comment", trackInfo.getComment());
     pTrackLibraryQuery->bindValue(":url", track.getUrl());
     pTrackLibraryQuery->bindValue(":rating", track.getRating());
+    pTrackLibraryQuery->bindValue(":phrase_offset", track.getPhraseOffset());
     pTrackLibraryQuery->bindValue(":cuepoint",
             track.getMainCuePosition().toEngineSamplePosMaybeInvalid());
     pTrackLibraryQuery->bindValue(":bpm_lock", track.getBpmLocked() ? 1 : 0);
@@ -1214,6 +1217,10 @@ void setTrackRating(const QSqlRecord& record, const int column, Track* pTrack) {
     pTrack->setRating(record.value(column).toInt());
 }
 
+void setTrackPhraseOffset(const QSqlRecord& record, const int column, Track* pTrack) {
+    pTrack->setPhraseOffset(record.value(column).toInt());
+}
+
 void setTrackCuePoint(const QSqlRecord& record, const int column, Track* pTrack) {
     pTrack->setMainCuePosition(mixxx::audio::FramePos::fromEngineSamplePosMaybeInvalid(
             record.value(column).toDouble()));
@@ -1399,6 +1406,7 @@ TrackPointer TrackDAO::getTrackById(TrackId trackId) const {
             {"tracktotal", setTrackTotal},
             {"filetype", setTrackFiletype},
             {"rating", setTrackRating},
+            {"phrase_offset", setTrackPhraseOffset},
             {"color", setTrackColor},
             {"comment", setTrackComment},
             {"url", setTrackUrl},
@@ -1710,6 +1718,7 @@ bool TrackDAO::updateTrack(const Track& track) const {
             "comment=:comment,"
             "url=:url,"
             "rating=:rating,"
+            "phrase_offset=:phrase_offset,"
             "key=:key,"
             "key_id=:key_id,"
             "tuning_frequency_hz=:tuning_frequency_hz,"

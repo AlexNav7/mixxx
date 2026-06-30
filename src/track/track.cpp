@@ -1533,6 +1533,19 @@ void Track::setRating (int rating) {
     }
 }
 
+int Track::getPhraseOffset() const {
+    const auto locked = lockMutex(&m_qMutex);
+    return m_record.getPhraseOffset();
+}
+
+void Track::setPhraseOffset(int phraseOffset) {
+    auto locked = lockMutex(&m_qMutex);
+    if (compareAndSet(m_record.ptrPhraseOffset(), phraseOffset)) {
+        markDirtyAndUnlock(&locked);
+        emit phraseOffsetUpdated(phraseOffset);
+    }
+}
+
 void Track::afterKeysUpdated(QT_RECURSIVE_MUTEX_LOCKER* pLock) {
     markDirtyAndUnlock(pLock);
     emit keyChanged();

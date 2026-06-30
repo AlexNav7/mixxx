@@ -373,13 +373,10 @@ void WOverview::slotTrackLoaded(TrackPointer pTrack) {
     //qDebug() << "WOverview::slotTrackLoaded()" << m_pCurrentTrack.get() << pTrack.get();
     DEBUG_ASSERT(m_pCurrentTrack == pTrack);
     m_trackLoaded = true;
-    // Restore this track's saved phrase-line offset (per-track, persisted).
+    // Restore this track's saved phrase-line offset (stored in the library DB).
     m_phraseOffset = 0;
-    if (m_pCurrentTrack && m_pCurrentTrack->getId().isValid()) {
-        m_phraseOffset = m_pConfig->getValue(
-                ConfigKey(QStringLiteral("[PhraseOffsets]"),
-                        m_pCurrentTrack->getId().toString()),
-                0);
+    if (m_pCurrentTrack) {
+        m_phraseOffset = m_pCurrentTrack->getPhraseOffset();
     }
     if (m_pCurrentTrack) {
         updateCues(m_pCurrentTrack->getCuePoints());
@@ -633,12 +630,9 @@ void WOverview::wheelEvent(QWheelEvent* e) {
         return;
     }
     m_phraseOffset += (delta > 0) ? 1 : -1;
-    // Persist per-track so the alignment is remembered.
-    if (m_pCurrentTrack && m_pCurrentTrack->getId().isValid()) {
-        m_pConfig->set(
-                ConfigKey(QStringLiteral("[PhraseOffsets]"),
-                        m_pCurrentTrack->getId().toString()),
-                ConfigValue(QString::number(m_phraseOffset)));
+    // Persist per-track in the library database.
+    if (m_pCurrentTrack) {
+        m_pCurrentTrack->setPhraseOffset(m_phraseOffset);
     }
     update();
     e->accept();

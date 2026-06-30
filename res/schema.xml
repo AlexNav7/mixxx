@@ -593,4 +593,13 @@ reapplying those migrations.
       ALTER TABLE library ADD COLUMN tuning_frequency_hz FLOAT DEFAULT 0.0;
     </sql>
   </revision>
+  <revision version="41" min_compatible="3">
+    <description>
+      Add phrase_offset column to persist the phrase-line offset (in beats)
+      used to align the overview phrase markers for each track.
+    </description>
+    <sql>
+      ALTER TABLE library ADD COLUMN phrase_offset INTEGER DEFAULT 0;
+    </sql>
+  </revision>
 </schema>

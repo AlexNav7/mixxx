@@ -278,6 +278,10 @@ class Track : public QObject {
         setRating(mixxx::TrackRecord::kNoRating);
     }
 
+    /// Phrase-line offset (in beats) for the overview phrase markers.
+    int getPhraseOffset() const;
+    void setPhraseOffset(int);
+
     QString getURL() const;
     void setURL(const QString& url);
 
@@ -493,6 +497,7 @@ class Track : public QObject {
     void replayGainAdjusted(const mixxx::ReplayGain&, const QString& requestingPlayerGroup);
     void colorUpdated(const mixxx::RgbColor::optional_t& color);
     void ratingUpdated(int rating);
+    void phraseOffsetUpdated(int phraseOffset);
     void cuesUpdated();
 #ifdef __STEM__
     void stemsUpdated();

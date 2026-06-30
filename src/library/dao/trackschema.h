@@ -39,6 +39,7 @@ const QString LIBRARYTABLE_TIMESPLAYED = QStringLiteral("timesplayed");
 const QString LIBRARYTABLE_LAST_PLAYED_AT = QStringLiteral("last_played_at");
 const QString LIBRARYTABLE_PLAYED = QStringLiteral("played");
 const QString LIBRARYTABLE_RATING = QStringLiteral("rating");
+const QString LIBRARYTABLE_PHRASE_OFFSET = QStringLiteral("phrase_offset");
 const QString LIBRARYTABLE_KEY = QStringLiteral("key");
 const QString LIBRARYTABLE_KEY_ID = QStringLiteral("key_id");
 const QString LIBRARYTABLE_TUNING_FREQUENCY = QStringLiteral("tuning_frequency_hz");

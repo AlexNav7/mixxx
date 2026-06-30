@@ -56,6 +56,7 @@ class TrackRecord final {
     MIXXX_DECL_PROPERTY(RgbColor::optional_t, color, Color)
     MIXXX_DECL_PROPERTY(mixxx::audio::FramePos, mainCuePosition, MainCuePosition)
     MIXXX_DECL_PROPERTY(int, rating, Rating)
+    MIXXX_DECL_PROPERTY(int, phraseOffset, PhraseOffset)
     MIXXX_DECL_PROPERTY(bool, bpmLocked, BpmLocked)
 
   public:
