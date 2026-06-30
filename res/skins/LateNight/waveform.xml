@@ -37,6 +37,16 @@
           <BindProperty>highlight</BindProperty>
         </Connection>
       </WidgetGroup>
+      <!-- Deck number, to tell waveforms apart (esp. with 4 decks). -->
+      <Label>
+        <ObjectName>WaveformDeckNumber</ObjectName>
+        <Size>15f,0me</Size>
+        <Text><Variable name="ChanNum"/></Text>
+        <Alignment>center</Alignment>
+        <Style>
+          #WaveformDeckNumber { background-color: #1a1a1a; color: #cccccc; font: bold 12px; }
+        </Style>
+      </Label>
       <WidgetGroup>
         <RequiresStem>true</RequiresStem>
         <ObjectName>StemControls</ObjectName>

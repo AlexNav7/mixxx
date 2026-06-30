@@ -7,36 +7,64 @@
 
       <!-- Active-deck bar: indicates the active deck (color from `focus`) and
            selects this deck when clicked (writes to `focus_request`). -->
-      <PushButton>
-        <ObjectName>DeckFocusBar</ObjectName>
+      <WidgetGroup>
+        <Layout>horizontal</Layout>
         <Size>0e,18f</Size>
-        <NumberStates>7</NumberStates>
-        <Text>ACTIVE</Text>
-        <Style>
-          #DeckFocusBar {
-            background-color: #222222;
-            border: none;
-            color: #777777;
-            font: bold 9px;
-            qproperty-alignment: 'AlignCenter';
-          }
-          #DeckFocusBar[value="1"] { background-color: #ff9d00; color: #1a1a1a; }
-          #DeckFocusBar[value="2"] { background-color: #00b4ff; color: #1a1a1a; }
-          #DeckFocusBar[value="3"] { background-color: #2ecc40; color: #1a1a1a; }
-          #DeckFocusBar[value="4"] { background-color: #ff4fd8; color: #1a1a1a; }
-          #DeckFocusBar[value="5"] { background-color: #ff3b30; color: #ffffff; }
-          #DeckFocusBar[value="6"] { background-color: #ffe000; color: #1a1a1a; }
-        </Style>
-        <Connection>
-          <ConfigKey>[Channel<Variable name="ChanNum"/>],focus_request</ConfigKey>
-          <ButtonState>LeftButton</ButtonState>
-          <ConnectValueToWidget>false</ConnectValueToWidget>
-        </Connection>
-        <Connection>
-          <ConfigKey>[Channel<Variable name="ChanNum"/>],focus</ConfigKey>
-          <ConnectValueFromWidget>false</ConnectValueFromWidget>
-        </Connection>
-      </PushButton>
+        <Children>
+          <WidgetGroup>
+            <ObjectName>DeckBarNumBg</ObjectName>
+            <Layout>stacked</Layout>
+            <Size>30f,18f</Size>
+            <Style>
+              #DeckBarNumBg { background-color: #222222; }
+              #DeckBarNumBg[highlight="1"] { background-color: #ff9d00; }
+              #DeckBarNumBg[highlight="2"] { background-color: #00b4ff; }
+              #DeckBarNumBg[highlight="3"] { background-color: #2ecc40; }
+              #DeckBarNumBg[highlight="4"] { background-color: #ff4fd8; }
+              #DeckBarNumBg[highlight="5"] { background-color: #ff3b30; }
+              #DeckBarNumBg[highlight="6"] { background-color: #ffe000; }
+            </Style>
+            <Children>
+              <Label>
+                <ObjectName>DeckBarLabel</ObjectName>
+                <Size>30f,18f</Size>
+                <Text><Variable name="ChanNum"/></Text>
+                <Alignment>center</Alignment>
+                <Style>
+                  #DeckBarLabel { background-color: transparent; color: #ffffff; font: bold 13px; }
+                </Style>
+              </Label>
+            </Children>
+            <Connection>
+              <ConfigKey>[Channel<Variable name="ChanNum"/>],focus</ConfigKey>
+              <BindProperty>highlight</BindProperty>
+            </Connection>
+          </WidgetGroup>
+          <PushButton>
+            <ObjectName>DeckFocusBar</ObjectName>
+            <Size>0e,18f</Size>
+            <NumberStates>7</NumberStates>
+            <Style>
+              #DeckFocusBar { background-color: #222222; border: none; }
+              #DeckFocusBar[value="1"] { background-color: #ff9d00; }
+              #DeckFocusBar[value="2"] { background-color: #00b4ff; }
+              #DeckFocusBar[value="3"] { background-color: #2ecc40; }
+              #DeckFocusBar[value="4"] { background-color: #ff4fd8; }
+              #DeckFocusBar[value="5"] { background-color: #ff3b30; }
+              #DeckFocusBar[value="6"] { background-color: #ffe000; }
+            </Style>
+            <Connection>
+              <ConfigKey>[Channel<Variable name="ChanNum"/>],focus_request</ConfigKey>
+              <ButtonState>LeftButton</ButtonState>
+              <ConnectValueToWidget>false</ConnectValueToWidget>
+            </Connection>
+            <Connection>
+              <ConfigKey>[Channel<Variable name="ChanNum"/>],focus</ConfigKey>
+              <ConnectValueFromWidget>false</ConnectValueFromWidget>
+            </Connection>
+          </PushButton>
+        </Children>
+      </WidgetGroup>
 
       <Template src="skins:LateNight/decks/deck_singletons.xml">
         <SetVariable name="Type">deck</SetVariable>
