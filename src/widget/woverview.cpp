@@ -15,6 +15,8 @@
 #include "mixer/playermanager.h"
 #include "moc_woverview.cpp"
 #include "preferences/colorpalettesettings.h"
+#include "audio/frame.h"
+#include "track/beats.h"
 #include "track/track.h"
 #include "util/colorcomponents.h"
 #include "util/dnd.h"
@@ -730,6 +732,7 @@ void WOverview::paintEvent(QPaintEvent* pEvent) {
         drawWaveformPixmap(&painter);
         drawPlayedOverlay(&painter);
         drawMinuteMarkers(&painter);
+        drawBeatMarkers(&painter);
         drawPlayPosition(&painter);
         drawEndOfTrackFrame(&painter);
         drawAnalyzerProgress(&painter);
@@ -881,6 +884,51 @@ void WOverview::drawMinuteMarkers(QPainter* pPainter) {
             }
         }
     }
+}
+
+void WOverview::drawBeatMarkers(QPainter* pPainter) {
+    if (!m_trackLoaded || !m_pCurrentTrack) {
+        return;
+    }
+    const mixxx::BeatsPointer pBeats = m_pCurrentTrack->getBeats();
+    if (!pBeats) {
+        return;
+    }
+    const double trackSamples = getTrackSamples();
+    if (trackSamples <= 0) {
+        return;
+    }
+
+    // A faint full-height line every N beats, to see phrases/sections at a glance.
+    constexpr int kBeatsPerMarker = 32;
+
+    QLineF line;
+    pPainter->setPen(QPen(m_axesColor, m_scaleFactor));
+    pPainter->setOpacity(0.45);
+
+    const double overviewHeight = m_orientation == Qt::Horizontal ? height() : width();
+
+    int beatCount = 0;
+    for (auto it = pBeats->iteratorFrom(mixxx::audio::kStartFramePos);
+            it != pBeats->cend(); ++it, ++beatCount) {
+        const double beatSamplePos = it->toEngineSamplePos();
+        // The beat grid can extend past the end of the track (and be infinite
+        // for a constant-tempo grid), so stop at the track end.
+        if (beatSamplePos > trackSamples) {
+            break;
+        }
+        if (beatCount == 0 || (beatCount % kBeatsPerMarker) != 0) {
+            continue;
+        }
+        const double xPos = valueToPosition(beatSamplePos / trackSamples);
+        if (m_orientation == Qt::Horizontal) {
+            line.setLine(xPos, 0.0, xPos, overviewHeight);
+        } else {
+            line.setLine(0.0, xPos, overviewHeight, xPos);
+        }
+        pPainter->drawLine(line);
+    }
+    pPainter->setOpacity(1.0);
 }
 
 void WOverview::drawPlayedOverlay(QPainter* pPainter) {
