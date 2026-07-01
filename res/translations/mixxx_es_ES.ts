@@ -18242,4 +18242,11 @@ Pulse Aceptar para salir.</translation>
         <translation type="unfinished"/>
     </message>
 </context>
+<context>
+    <name>FoldersFeature</name>
+    <message>
+        <source>Folders</source>
+        <translation>Carpetas</translation>
+    </message>
+</context>
 </TS>
