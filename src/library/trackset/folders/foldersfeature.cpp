@@ -96,12 +96,19 @@ void FoldersFeature::rebuildChildModel() {
     for (const QString& dir : directories) {
         QString normalized = dir;
         normalized.replace(QChar('\\'), QChar('/'));
+        // Absolute *nix paths start with '/', which must be preserved in the
+        // stored prefix so the filter matches the DB (e.g. "/Users/me/Music").
+        const bool absolute = normalized.startsWith(QChar('/'));
         const QStringList segments =
                 normalized.split(QChar('/'), Qt::SkipEmptyParts);
         TreeItem* pParent = nullptr;
         QString prefix;
         for (const QString& segment : segments) {
-            prefix = prefix.isEmpty() ? segment : prefix + QChar('/') + segment;
+            if (prefix.isEmpty()) {
+                prefix = absolute ? QChar('/') + segment : segment;
+            } else {
+                prefix += QChar('/') + segment;
+            }
             TreeItem* pNode = nodeByPath.value(prefix, nullptr);
             if (pNode == nullptr) {
                 if (pParent == nullptr) {
