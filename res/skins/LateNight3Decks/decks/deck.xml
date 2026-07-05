@@ -1,0 +1,178 @@
+<Template>
+
+  <WidgetGroup>
+    <Layout>vertical</Layout>
+    <MaximumSize>,230</MaximumSize>
+    <Children>
+
+      <!-- Active-deck bar: indicates the active deck (color from `focus`) and
+           selects this deck when clicked (writes to `focus_request`). -->
+      <WidgetGroup>
+        <Layout>horizontal</Layout>
+        <Size>0e,18f</Size>
+        <Children>
+          <WidgetGroup>
+            <ObjectName>DeckBarNumBg</ObjectName>
+            <Layout>stacked</Layout>
+            <Size>30f,18f</Size>
+            <Style>
+              #DeckBarNumBg { background-color: #222222; }
+              #DeckBarNumBg[highlight="1"] { background-color: #ff9d00; }
+              #DeckBarNumBg[highlight="2"] { background-color: #00b4ff; }
+              #DeckBarNumBg[highlight="3"] { background-color: #2ecc40; }
+              #DeckBarNumBg[highlight="4"] { background-color: #ff4fd8; }
+              #DeckBarNumBg[highlight="5"] { background-color: #ff3b30; }
+              #DeckBarNumBg[highlight="6"] { background-color: #ffe000; }
+            </Style>
+            <Children>
+              <Label>
+                <ObjectName>DeckBarLabel</ObjectName>
+                <Size>30f,18f</Size>
+                <Text><Variable name="ChanNum"/></Text>
+                <Alignment>center</Alignment>
+                <Style>
+                  #DeckBarLabel { background-color: transparent; color: #ffffff; font: bold 13px; }
+                </Style>
+              </Label>
+            </Children>
+            <Connection>
+              <ConfigKey>[Channel<Variable name="ChanNum"/>],focus</ConfigKey>
+              <BindProperty>highlight</BindProperty>
+            </Connection>
+          </WidgetGroup>
+          <PushButton>
+            <ObjectName>DeckFocusBar</ObjectName>
+            <Size>0e,18f</Size>
+            <NumberStates>7</NumberStates>
+            <Style>
+              #DeckFocusBar { background-color: #222222; border: none; }
+              #DeckFocusBar[value="1"] { background-color: #ff9d00; }
+              #DeckFocusBar[value="2"] { background-color: #00b4ff; }
+              #DeckFocusBar[value="3"] { background-color: #2ecc40; }
+              #DeckFocusBar[value="4"] { background-color: #ff4fd8; }
+              #DeckFocusBar[value="5"] { background-color: #ff3b30; }
+              #DeckFocusBar[value="6"] { background-color: #ffe000; }
+            </Style>
+            <Connection>
+              <ConfigKey>[Channel<Variable name="ChanNum"/>],focus_request</ConfigKey>
+              <ButtonState>LeftButton</ButtonState>
+              <ConnectValueToWidget>false</ConnectValueToWidget>
+            </Connection>
+            <Connection>
+              <ConfigKey>[Channel<Variable name="ChanNum"/>],focus</ConfigKey>
+              <ConnectValueFromWidget>false</ConnectValueFromWidget>
+            </Connection>
+          </PushButton>
+        </Children>
+      </WidgetGroup>
+
+      <Template src="skins:LateNight3Decks/decks/deck_singletons.xml">
+        <SetVariable name="Type">deck</SetVariable>
+        <SetVariable name="Group">[Channel<Variable name="ChanNum"/>]</SetVariable>
+      </Template>
+
+      <!-- Frame around the deck, colored when this deck is active. -->
+      <WidgetGroup>
+        <ObjectName>DeckBorder</ObjectName>
+        <Layout>vertical</Layout>
+        <Style>
+          #DeckBorderEdge { background-color: transparent; }
+          #DeckBorderEdge[highlight="1"] { background-color: #ff9d00; }
+          #DeckBorderEdge[highlight="2"] { background-color: #00b4ff; }
+          #DeckBorderEdge[highlight="3"] { background-color: #2ecc40; }
+          #DeckBorderEdge[highlight="4"] { background-color: #ff4fd8; }
+          #DeckBorderEdge[highlight="5"] { background-color: #ff3b30; }
+          #DeckBorderEdge[highlight="6"] { background-color: #ffe000; }
+        </Style>
+        <Children>
+
+          <WidgetGroup>
+            <Layout>horizontal</Layout>
+            <SizePolicy>me,me</SizePolicy>
+            <Children>
+
+              <WidgetGroup>
+                <ObjectName>DeckBorderEdge</ObjectName>
+                <Size>2f,0me</Size>
+                <Connection>
+                  <ConfigKey>[Channel<Variable name="ChanNum"/>],focus</ConfigKey>
+                  <BindProperty>highlight</BindProperty>
+                </Connection>
+              </WidgetGroup>
+
+              <WidgetStack currentpage="[Skin],show_mixer" persist="true">
+        <Children>
+
+          <!-- no mixer -->
+          <WidgetStack currentpage="[LateNight],deck_size_without_mixer" persist="true">
+            <Children>
+              <!-- minimal deck selected -->
+              <WidgetGroup trigger="[LateNight],show_mini_deck">
+                <Layout>horizontal</Layout>
+                <Children>
+                  <SingletonContainer>
+                    <ObjectName>Deck<Variable name="ChanNum"/>_Mini</ObjectName>
+                  </SingletonContainer>
+                </Children>
+              </WidgetGroup>
+              <!-- Compact deck selected -->
+              <WidgetGroup trigger="[LateNight],show_compact_deck">
+                <Layout>horizontal</Layout>
+                <Children>
+                <SingletonContainer>
+                  <ObjectName>Deck<Variable name="ChanNum"/>_Compact</ObjectName>
+                </SingletonContainer>
+                </Children>
+              </WidgetGroup>
+              <!-- Full deck selected -->
+              <WidgetGroup trigger="[LateNight],show_full_deck">
+                <Layout>horizontal</Layout>
+                <Children>
+                  <SingletonContainer>
+                    <ObjectName>Deck<Variable name="ChanNum"/>_Full</ObjectName>
+                  </SingletonContainer>
+                </Children>
+              </WidgetGroup>
+            </Children>
+          </WidgetStack>
+
+          <!-- mixer shown = full deck -->
+          <WidgetGroup trigger="[Skin],show_mixer" on_hide_select="0">
+            <Layout>horizontal</Layout>
+            <Children>
+              <SingletonContainer>
+                <ObjectName>Deck<Variable name="ChanNum"/>_Full</ObjectName>
+              </SingletonContainer>
+            </Children>
+          </WidgetGroup>
+
+        </Children>
+              </WidgetStack>
+
+              <WidgetGroup>
+                <ObjectName>DeckBorderEdge</ObjectName>
+                <Size>2f,0me</Size>
+                <Connection>
+                  <ConfigKey>[Channel<Variable name="ChanNum"/>],focus</ConfigKey>
+                  <BindProperty>highlight</BindProperty>
+                </Connection>
+              </WidgetGroup>
+
+            </Children>
+          </WidgetGroup>
+
+          <WidgetGroup>
+            <ObjectName>DeckBorderEdge</ObjectName>
+            <Size>0me,2f</Size>
+            <Connection>
+              <ConfigKey>[Channel<Variable name="ChanNum"/>],focus</ConfigKey>
+              <BindProperty>highlight</BindProperty>
+            </Connection>
+          </WidgetGroup>
+
+        </Children>
+      </WidgetGroup>
+
+    </Children>
+  </WidgetGroup>
+</Template>

@@ -1,0 +1,17 @@
+<Template>
+  <SetVariable name="Type">deck</SetVariable>
+  <WidgetGroup>
+    <ObjectName>DecksRight</ObjectName>
+    <Layout>vertical</Layout>
+    <SizePolicy>me,min</SizePolicy>
+    <Children>
+
+      <SingletonContainer>
+        <ObjectName>Deck2_Mini</ObjectName>
+      </SingletonContainer>
+
+      <!-- three-deck-skin: Deck4 mini removed (only 3 decks) -->
+
+    </Children>
+  </WidgetGroup><!-- DecksRight -->
+</Template>
