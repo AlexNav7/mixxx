@@ -395,8 +395,9 @@
       <Template src="skins:LateNight3Decks/decks/deck.xml">
         <SetVariable name="ChanNum">3</SetVariable>
         <SetVariable name="DeckGroup">34</SetVariable>
-        <SetVariable name="SignalColor"><Variable name="SignalColor_34"/></SetVariable>
-        <SetVariable name="BgColor"><Variable name="BgColorOverview_34"/></SetVariable>
+        <!-- three-deck-skin: deck 3 uses the deck 1/2 color palette (homogeneous) -->
+        <SetVariable name="SignalColor"><Variable name="SignalColor_12"/></SetVariable>
+        <SetVariable name="BgColor"><Variable name="BgColorOverview_12"/></SetVariable>
       </Template>
       </Children>
     </SingletonDefinition>
@@ -480,12 +481,24 @@
                           <Layout>horizontal</Layout>
                           <SizePolicy>me,max</SizePolicy>
                           <Children>
-                            <!-- decks 1 y 2 siempre; deck 3 con el toggle "3 DECKS" (three-deck-skin) -->
-                            <SingletonContainer><ObjectName>Deck1_Src</ObjectName></SingletonContainer>
-                            <SingletonContainer><ObjectName>Deck2_Src</ObjectName></SingletonContainer>
+                            <!-- three-deck-skin: los 3 decks con ancho igual (me); el 3 con el toggle "3 DECKS" -->
                             <WidgetGroup>
                               <Layout>horizontal</Layout>
-                              <SizePolicy>max,min</SizePolicy>
+                              <SizePolicy>me,max</SizePolicy>
+                              <Children>
+                                <SingletonContainer><ObjectName>Deck1_Src</ObjectName></SingletonContainer>
+                              </Children>
+                            </WidgetGroup>
+                            <WidgetGroup>
+                              <Layout>horizontal</Layout>
+                              <SizePolicy>me,max</SizePolicy>
+                              <Children>
+                                <SingletonContainer><ObjectName>Deck2_Src</ObjectName></SingletonContainer>
+                              </Children>
+                            </WidgetGroup>
+                            <WidgetGroup>
+                              <Layout>horizontal</Layout>
+                              <SizePolicy>me,max</SizePolicy>
                               <Children>
                                 <SingletonContainer><ObjectName>Deck3_Src</ObjectName></SingletonContainer>
                               </Children>

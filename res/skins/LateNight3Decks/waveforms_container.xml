@@ -62,8 +62,9 @@
                 <Children>
                   <Template src="skins:LateNight3Decks/waveform.xml">
                     <SetVariable name="ChanNum">3</SetVariable>
-                    <SetVariable name="SignalColor"><Variable name="SignalColor_34"/></SetVariable>
-                    <SetVariable name="BgColorWaveform"><Variable name="BgColorWaveform_34"/></SetVariable>
+                    <!-- three-deck-skin: deck 3 uses the deck 1/2 palette (homogeneous) -->
+                    <SetVariable name="SignalColor"><Variable name="SignalColor_12"/></SetVariable>
+                    <SetVariable name="BgColorWaveform"><Variable name="BgColorWaveform_12"/></SetVariable>
                   </Template>
                 </Children>
                 <!-- three-deck-skin: deck 3 waveform toggles with the 3-decks button -->
