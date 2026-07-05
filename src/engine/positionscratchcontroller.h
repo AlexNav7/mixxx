@@ -35,10 +35,20 @@ class PositionScratchController : public QObject {
     void notifySeek(mixxx::audio::FramePos position);
     void reset();
 
+    // Global "feel" of mouse/position scratching, in [0.0 = precise/grabby,
+    // 1.0 = smooth]. Set from the preferences (Decks page). Applies to the
+    // next scratch gesture on every deck.
+    static void setScratchSensitivity(double sensitivity);
+
   private slots:
     void slotUpdateFilterParameters(double sampleRate);
 
   private:
+    // Derive the PD/IIR/move-delay parameters from s_scratchSensitivity.
+    void applySensitivity();
+
+    static double s_scratchSensitivity;
+
     const QString m_group;
     std::unique_ptr<ControlObject> m_pScratchEnable;
     std::unique_ptr<ControlObject> m_pScratchPos;
@@ -54,6 +64,7 @@ class PositionScratchController : public QObject {
     double m_scratchStartPos;
     double m_rate;
     double m_moveDelay;
+    double m_moveDelayMax;
     double m_scratchPosSampleTime;
 
     std::size_t m_bufferSize;

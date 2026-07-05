@@ -40,6 +40,7 @@ class RateIIFilter {
   public:
     RateIIFilter()
             : m_factor(1.0),
+              m_decelBypass(-0.1),
               m_last_rate(0.0) {
     }
 
@@ -47,15 +48,23 @@ class RateIIFilter {
         m_factor = factor;
     }
 
+    // Threshold (<= 0) on (|rate| - |last|) below which strong decelerations
+    // bypass the filter and snap instantly (prevents overshoot but feels
+    // abrupt). A large negative value keeps decelerations filtered too, so
+    // the rate coasts down symmetrically instead of braking hard.
+    void setDecelBypass(double threshold) {
+        m_decelBypass = threshold;
+    }
+
     void reset(double last_rate) {
         m_last_rate = last_rate;
     }
 
     double filter(double rate) {
-        if (fabs(rate) - fabs(m_last_rate) > -0.1) {
+        if (fabs(rate) - fabs(m_last_rate) > m_decelBypass) {
             m_last_rate = m_last_rate * (1 - m_factor) + rate * m_factor;
         } else {
-            // do not filter strong decelerations to avoid overshooting
+            // Strong deceleration: snap to avoid overshooting.
             m_last_rate = rate;
         }
         return m_last_rate;
@@ -63,18 +72,33 @@ class RateIIFilter {
 
   private:
     double m_factor;
+    double m_decelBypass;
     double m_last_rate;
 };
 
 namespace {
 
 constexpr double kDefaultSampleInterval = 0.016;
-// The max wait time when no new position has been set
-// TODO Make threshold configurable for controller use?
-constexpr double kMoveDelayMax = 0.04;
 // The rate threshold above which disabling position scratching will enable
 // an 'inertia' mode.
 constexpr double kThrowThreshold = 2.5;
+
+// "Feel" endpoints of mouse/position scratching, interpolated by the user
+// sensitivity setting (see PositionScratchController::applySensitivity).
+// Index "precise" reproduces the historical hard-wired behavior; "smooth"
+// gives a softer, higher-inertia feel (closer to e.g. VirtualDJ).
+constexpr double kScratchProportionalPrecise = 0.30; // PD proportional gain
+constexpr double kScratchProportionalSmooth = 0.06;
+constexpr double kScratchRateFilterPrecise = 0.40; // IIR follow factor
+constexpr double kScratchRateFilterSmooth = 0.12;
+// The max wait time (s) with no new position before we treat the mouse as
+// stopped. Longer = coasts through brief pauses instead of braking abruptly.
+constexpr double kMoveDelayMaxPrecise = 0.04;
+constexpr double kMoveDelayMaxSmooth = 0.20;
+// Deceleration bypass threshold: precise snaps hard braking (anti-overshoot),
+// smooth keeps braking filtered so it coasts to a stop in both directions.
+constexpr double kScratchDecelBypassPrecise = -0.1;
+constexpr double kScratchDecelBypassSmooth = -30.0;
 // Max velocity we would like to stop in a given time period.
 constexpr double kMaxVelocity = 100;
 // Seconds to stop a throw at the max velocity.
@@ -102,6 +126,7 @@ PositionScratchController::PositionScratchController(const QString& group)
           m_scratchStartPos(0),
           m_rate(0),
           m_moveDelay(0),
+          m_moveDelayMax(kMoveDelayMaxPrecise),
           m_scratchPosSampleTime(0),
           m_bufferSize(-1),
           m_dt(1),
@@ -117,6 +142,38 @@ PositionScratchController::PositionScratchController(const QString& group)
 PositionScratchController::~PositionScratchController() {
 }
 
+// Default is biased toward the smoother end of the range; overwritten at
+// startup / on Apply from the [Controls],ScratchSensitivity preference.
+double PositionScratchController::s_scratchSensitivity = 0.6;
+
+void PositionScratchController::setScratchSensitivity(double sensitivity) {
+    s_scratchSensitivity = math_clamp(sensitivity, 0.0, 1.0);
+}
+
+void PositionScratchController::applySensitivity() {
+    // s in [0.0 = precise/grabby, 1.0 = smooth/high-inertia].
+    const double s = s_scratchSensitivity;
+
+    m_p = kScratchProportionalPrecise +
+            (kScratchProportionalSmooth - kScratchProportionalPrecise) * s;
+    m_d = m_p / -2;
+
+    m_f = kScratchRateFilterPrecise +
+            (kScratchRateFilterSmooth - kScratchRateFilterPrecise) * s;
+    // High-latency safety: strong smoothing is required to stay stable.
+    if (m_dt > kDefaultSampleInterval * 2) {
+        m_f = 1;
+    }
+
+    m_moveDelayMax = kMoveDelayMaxPrecise +
+            (kMoveDelayMaxSmooth - kMoveDelayMaxPrecise) * s;
+
+    m_pVelocityController->setPD(m_p, m_d);
+    m_pRateIIFilter->setFactor(m_f);
+    m_pRateIIFilter->setDecelBypass(kScratchDecelBypassPrecise +
+            (kScratchDecelBypassSmooth - kScratchDecelBypassPrecise) * s);
+}
+
 void PositionScratchController::slotUpdateFilterParameters(double sampleRate) {
     // The latency or time difference between process calls.
     m_dt = static_cast<double>(m_bufferSize) / sampleRate / 2;
@@ -130,16 +187,8 @@ void PositionScratchController::slotUpdateFilterParameters(double sampleRate) {
 
     m_callsToStop = m_dt / kTimeToStop;
 
-    // Tweak PD controller for different latencies
-    m_p = 0.3;
-    m_d = m_p / -2;
-    m_f = 0.4;
-    if (m_dt > kDefaultSampleInterval * 2) {
-        m_f = 1;
-    }
-
-    m_pVelocityController->setPD(m_p, m_d);
-    m_pRateIIFilter->setFactor(m_f);
+    // Derive the PD/IIR/move-delay parameters from the user sensitivity.
+    applySensitivity();
 }
 
 void PositionScratchController::process(double currentSamplePos,
@@ -238,7 +287,7 @@ void PositionScratchController::process(double currentSamplePos,
                     // mouse is stopped or moves very slowly. Since we don't
                     // know the case we assume delayed mouse updates for 40 ms.
                     m_moveDelay += m_dt * m_callsPerDt;
-                    if (m_moveDelay < kMoveDelayMax) {
+                    if (m_moveDelay < m_moveDelayMax) {
                         // Assume a missing Mouse Update and continue with the
                         // previously calculated rate.
                         calcRate = false;
@@ -290,6 +339,9 @@ void PositionScratchController::process(double currentSamplePos,
     } else if (scratchEnable) {
         // We were not previously in scratch mode but now we are.
         // Enable scratching.
+        // Pick up the latest sensitivity so preference changes take effect on
+        // the next gesture without needing a samplerate/buffersize change.
+        applySensitivity();
         m_isScratching = true;
         m_inertiaEnabled = false;
         m_moveDelay = 0;

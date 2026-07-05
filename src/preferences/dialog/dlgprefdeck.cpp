@@ -6,6 +6,7 @@
 #include "control/controlproxy.h"
 #include "defs_urls.h"
 #include "engine/controls/ratecontrol.h"
+#include "engine/positionscratchcontroller.h"
 #include "engine/sync/enginesync.h"
 #include "mixer/basetrackplayer.h"
 #include "mixer/playermanager.h"
@@ -23,6 +24,9 @@ constexpr double kDefaultTemporaryRateChangeFine = 2.00;
 constexpr double kDefaultPermanentRateChangeCoarse = 0.50;
 constexpr double kDefaultPermanentRateChangeFine = 0.05;
 constexpr int kDefaultRateRampSensitivity = 250;
+// Mouse-scratch "feel": 0 = precise/grabby, 100 = smooth/high-inertia.
+// Default biased toward the smoother end (matches PositionScratchController).
+constexpr int kDefaultScratchSensitivity = 60;
 constexpr double kDefaultPositionDisplayType =
         static_cast<double>(TrackTime::DisplayMode::ELAPSED_AND_REMAINING);
 // bool kDefaultCloneDeckOnLoad is defined in header file to make it available
@@ -352,6 +356,16 @@ DlgPrefDeck::DlgPrefDeck(QWidget* parent, UserSettingsPointer pConfig)
             this,
             &DlgPrefDeck::slotRateRampSensitivitySlider);
 
+    // Mouse-scratch smoothness slider
+    m_iScratchSensitivity =
+            m_pConfig->getValue(ConfigKey(kControlsGroup, QStringLiteral("ScratchSensitivity")),
+                    kDefaultScratchSensitivity);
+    SliderScratchSensitivity->setValue(m_iScratchSensitivity);
+    connect(SliderScratchSensitivity,
+            &QSlider::valueChanged,
+            this,
+            &DlgPrefDeck::slotScratchSensitivitySlider);
+
     // Enable/disable permanent rate spinboxes when smooth ramping is selected
     connect(radioButtonRateRampModeLinear,
             &QRadioButton::toggled,
@@ -517,6 +531,10 @@ void DlgPrefDeck::slotUpdate() {
             m_pConfig->getValue(ConfigKey(kControlsGroup, QStringLiteral("RateRampSensitivity")),
                     kDefaultRateRampSensitivity));
 
+    SliderScratchSensitivity->setValue(
+            m_pConfig->getValue(ConfigKey(kControlsGroup, QStringLiteral("ScratchSensitivity")),
+                    kDefaultScratchSensitivity));
+
     spinBoxTemporaryRateCoarse->setValue(RateControl::getTemporaryRateChangeCoarseAmount());
     spinBoxTemporaryRateFine->setValue(RateControl::getTemporaryRateChangeFineAmount());
     spinBoxPermanentRateCoarse->setValue(RateControl::getPermanentRateChangeCoarseAmount());
@@ -550,6 +568,8 @@ void DlgPrefDeck::slotResetToDefaults() {
     radioButtonRateRampModeStepping->setChecked(true);
 
     SliderRateRampSensitivity->setValue(kDefaultRateRampSensitivity);
+
+    SliderScratchSensitivity->setValue(kDefaultScratchSensitivity);
 
     // Permanent and temporary pitch adjust fine/coarse.
     spinBoxTemporaryRateCoarse->setValue(4.0);
@@ -669,6 +689,10 @@ void DlgPrefDeck::slotRateRampSensitivitySlider(int value) {
     m_iRateRampSensitivity = value;
 }
 
+void DlgPrefDeck::slotScratchSensitivitySlider(int value) {
+    m_iScratchSensitivity = value;
+}
+
 void DlgPrefDeck::slotRateRampingModeLinearButton(bool checked) {
     if (checked) {
         m_bRateRamping = RateControl::RampMode::Linear;
@@ -774,6 +798,11 @@ void DlgPrefDeck::slotApply() {
     m_pConfig->setValue(
             ConfigKey(kControlsGroup, QStringLiteral("RateRampSensitivity")),
             m_iRateRampSensitivity);
+
+    PositionScratchController::setScratchSensitivity(m_iScratchSensitivity / 100.0);
+    m_pConfig->setValue(
+            ConfigKey(kControlsGroup, QStringLiteral("ScratchSensitivity")),
+            m_iScratchSensitivity);
 
     RateControl::setTemporaryRateChangeCoarseAmount(m_dRateTempCoarse);
     RateControl::setTemporaryRateChangeFineAmount(m_dRateTempFine);

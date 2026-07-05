@@ -18,6 +18,9 @@
 namespace {
 constexpr int kRateSensitivityMin = 100;
 constexpr int kRateSensitivityMax = 2500;
+// Default mouse-scratch smoothness (0..100) applied at startup, kept in sync
+// with kDefaultScratchSensitivity in dlgprefdeck.cpp.
+constexpr int kDefaultScratchSensitivityPercent = 60;
 } // namespace
 
 // Static default values for rate buttons (percents)
@@ -123,6 +126,16 @@ RateControl::RateControl(const QString& group, UserSettingsPointer pConfig)
                 ConfigKey(getGroup(), QStringLiteral("vinylcontrol_mode")),
                 ControlFlag::NoAssertIfMissing);
     }
+    // Apply the saved mouse-scratch smoothness at startup. This is a static
+    // shared by all decks' PositionScratchControllers; the preferences dialog
+    // (Decks page) updates it live on Apply.
+    PositionScratchController::setScratchSensitivity(
+            getConfig()->getValue(
+                    ConfigKey(QStringLiteral("[Controls]"),
+                            QStringLiteral("ScratchSensitivity")),
+                    kDefaultScratchSensitivityPercent) /
+            100.0);
+
     // This is the resulting rate ratio that can be used for display or calculations.
     // The track original rate ratio is 1.
     connect(m_pRateRatio.get(),
