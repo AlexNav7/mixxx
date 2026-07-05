@@ -14,6 +14,15 @@
         <SetVariable name="ConfigKey">[Skin],show_maximized_library</SetVariable>
       </Template>
 
+      <Template src="skins:LateNight3Decks/controls/button_2state_persist.xml"><!-- three-deck-skin: horizontal vs stacked decks -->
+        <SetVariable name="TooltipId">toggle_4decks</SetVariable>
+        <SetVariable name="ObjectName">GuiToggleButton</SetVariable>
+        <SetVariable name="Size">60f,20f</SetVariable>
+        <SetVariable name="state_0_text">STACK</SetVariable>
+        <SetVariable name="state_1_text">STACK</SetVariable>
+        <SetVariable name="ConfigKey">[Skin],decks_vertical</SetVariable>
+      </Template>
+
       <WidgetGroup>
         <ObjectName>ToolbarSeparator</ObjectName>
         <Size>12f,9min</Size>

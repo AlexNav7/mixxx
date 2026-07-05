@@ -45,6 +45,7 @@
     <!-- Decks -->
       <!-- general -->
       <attribute persist="true" config_key="[Skin],show_4decks">0</attribute>
+      <attribute persist="true" config_key="[Skin],decks_vertical">0</attribute>
       <attribute persist="true" config_key="[Skin],show_hotcues">1</attribute>
       <attribute persist="true" config_key="[Skin],show_8_hotcues">1</attribute>
       <attribute persist="true" config_key="[Skin],show_intro_outro_cues">1</attribute>
@@ -481,32 +482,49 @@
                           <Layout>horizontal</Layout>
                           <SizePolicy>me,max</SizePolicy>
                           <Children>
-                            <!-- three-deck-skin: los 3 decks con ancho igual (me); el 3 con el toggle "3 DECKS" -->
-                            <WidgetGroup>
-                              <Layout>horizontal</Layout>
-                              <SizePolicy>me,max</SizePolicy>
-                              <Children>
-                                <SingletonContainer><ObjectName>Deck1_Src</ObjectName></SingletonContainer>
-                              </Children>
-                            </WidgetGroup>
-                            <WidgetGroup>
-                              <Layout>horizontal</Layout>
-                              <SizePolicy>me,max</SizePolicy>
-                              <Children>
-                                <SingletonContainer><ObjectName>Deck2_Src</ObjectName></SingletonContainer>
-                              </Children>
-                            </WidgetGroup>
-                            <WidgetGroup>
-                              <Layout>horizontal</Layout>
-                              <SizePolicy>me,max</SizePolicy>
-                              <Children>
-                                <SingletonContainer><ObjectName>Deck3_Src</ObjectName></SingletonContainer>
-                              </Children>
-                              <Connection>
-                                <ConfigKey persist="true">[Skin],show_4decks</ConfigKey>
-                                <BindProperty>visible</BindProperty>
-                              </Connection>
-                            </WidgetGroup>
+
+                            <WidgetStack currentpage="[Skin],decks_vertical"><!-- three-deck-skin: fila vs apilado (como BIG LIBRARY) -->
+                            <Children>
+
+                              <!-- página 0: decks en fila (horizontal), ancho igual -->
+                              <WidgetGroup>
+                                <Layout>horizontal</Layout>
+                                <SizePolicy>me,max</SizePolicy>
+                                <Children>
+                                  <WidgetGroup><Layout>horizontal</Layout><SizePolicy>me,max</SizePolicy><Children>
+                                    <SingletonContainer><ObjectName>Deck1_Src</ObjectName></SingletonContainer>
+                                  </Children></WidgetGroup>
+                                  <WidgetGroup><Layout>horizontal</Layout><SizePolicy>me,max</SizePolicy><Children>
+                                    <SingletonContainer><ObjectName>Deck2_Src</ObjectName></SingletonContainer>
+                                  </Children></WidgetGroup>
+                                  <WidgetGroup><Layout>horizontal</Layout><SizePolicy>me,max</SizePolicy>
+                                    <Children>
+                                      <SingletonContainer><ObjectName>Deck3_Src</ObjectName></SingletonContainer>
+                                    </Children>
+                                    <Connection><ConfigKey persist="true">[Skin],show_4decks</ConfigKey><BindProperty>visible</BindProperty></Connection>
+                                  </WidgetGroup>
+                                </Children>
+                              </WidgetGroup>
+
+                              <!-- página 1: decks apilados (vertical) -->
+                              <WidgetGroup>
+                                <Layout>vertical</Layout>
+                                <SizePolicy>me,max</SizePolicy>
+                                <Children>
+                                  <SingletonContainer><ObjectName>Deck1_Src</ObjectName></SingletonContainer>
+                                  <SingletonContainer><ObjectName>Deck2_Src</ObjectName></SingletonContainer>
+                                  <WidgetGroup><Layout>vertical</Layout><SizePolicy>me,min</SizePolicy>
+                                    <Children>
+                                      <SingletonContainer><ObjectName>Deck3_Src</ObjectName></SingletonContainer>
+                                    </Children>
+                                    <Connection><ConfigKey persist="true">[Skin],show_4decks</ConfigKey><BindProperty>visible</BindProperty></Connection>
+                                  </WidgetGroup>
+                                </Children>
+                              </WidgetGroup>
+
+                            </Children>
+                            </WidgetStack>
+
                             <Template src="skins:LateNight3Decks/mixer.xml"/>
                           </Children>
                         </WidgetGroup>
