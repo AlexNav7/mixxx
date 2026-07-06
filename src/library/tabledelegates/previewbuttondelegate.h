@@ -88,9 +88,15 @@ class PreviewButtonDelegate : public TableItemDelegate {
     const int m_column;
 
     const parented_ptr<ControlProxy> m_pPreviewDeckPlay;
+    // preview-active-deck: [App],active_deck — route preview to the active deck
+    const parented_ptr<ControlProxy> m_pActiveDeck;
     PollingControlProxy m_pCueGotoAndPlay;
 
     const parented_ptr<LibraryPreviewButton> m_pButton;
 
     QPersistentModelIndex m_currentEditedCellIndex;
+
+    // preview-active-deck: group of the deck currently holding a transient
+    // preview loaded by us (empty when none). Used to eject/replace it.
+    QString m_activePreviewGroup;
 };

@@ -4,6 +4,7 @@
 #include <QPushButton>
 #include <QStyleOptionButton>
 
+#include "control/controlobject.h"
 #include "control/controlproxy.h"
 #include "mixer/playerinfo.h"
 #include "mixer/playermanager.h"
@@ -49,6 +50,8 @@ PreviewButtonDelegate::PreviewButtonDelegate(
           m_column(column),
           m_pPreviewDeckPlay(make_parented<ControlProxy>(
                   kPreviewDeckGroup, QStringLiteral("play"), this)),
+          m_pActiveDeck(make_parented<ControlProxy>(
+                  QStringLiteral("[App]"), QStringLiteral("active_deck"), this)),
           m_pCueGotoAndPlay(kPreviewDeckGroup, QStringLiteral("cue_gotoandplay")),
           m_pButton(make_parented<LibraryPreviewButton>(parent)) {
     DEBUG_ASSERT(m_column >= 0);
@@ -214,10 +217,60 @@ void PreviewButtonDelegate::buttonClicked() {
         return;
     }
 
+    TrackPointer pTrack = pTrackModel->getTrack(m_currentEditedCellIndex);
+
+    // preview-active-deck: audition the track through the ACTIVE deck's channel
+    // (so it comes out that deck's mixer output) as a *transient preview*, when
+    // the deck is free. This is the only way to hear a track on a deck's channel
+    // (Mixxx has one player per deck; the preview deck has a separate, fixed
+    // output). Behaviour:
+    //   - active deck empty          -> load + play there (transient preview)
+    //   - click same track again     -> eject it (discard)
+    //   - preview another track      -> replace it on that deck
+    //   - keep it simply by leaving it (or loading normally)
+    // If the active deck holds a track that isn't our transient preview, we
+    // don't touch it and fall back to the dedicated preview deck.
+    const int activeDeckNum = static_cast<int>(m_pActiveDeck->get());
+    if (pTrack && activeDeckNum >= 1) {
+        const QString activeGroup = PlayerManager::groupForDeck(activeDeckNum - 1);
+        const TrackPointer pActiveTrack =
+                PlayerInfo::instance().getTrackInfo(activeGroup);
+        if (activeGroup == m_activePreviewGroup && pActiveTrack) {
+            // The active deck holds our transient preview.
+            if (pActiveTrack == pTrack) {
+                // Same track clicked again -> discard (eject) the preview.
+                ControlObject::set(
+                        ConfigKey(activeGroup, QStringLiteral("eject")), 1.0);
+                m_activePreviewGroup.clear();
+                return;
+            }
+            // Different track -> replace the transient preview on this deck.
+            emit loadTrackToPlayer(pTrack, activeGroup,
+#ifdef __STEM__
+                    mixxx::StemChannelSelection(),
+#endif
+                    true);
+            m_pTableView->selectRow(m_currentEditedCellIndex.row());
+            return;
+        }
+        if (!pActiveTrack) {
+            // Active deck is empty -> start a transient preview there.
+            emit loadTrackToPlayer(pTrack, activeGroup,
+#ifdef __STEM__
+                    mixxx::StemChannelSelection(),
+#endif
+                    true);
+            m_activePreviewGroup = activeGroup;
+            m_pTableView->selectRow(m_currentEditedCellIndex.row());
+            return;
+        }
+        // Active deck holds a non-transient track: leave it and use the
+        // preview deck below.
+    }
+
     TrackPointer pOldTrack = PlayerInfo::instance().getTrackInfo(kPreviewDeckGroup);
 
     bool startedPlaying = false;
-    TrackPointer pTrack = pTrackModel->getTrack(m_currentEditedCellIndex);
     if (pTrack && pTrack != pOldTrack) {
         // Load to preview deck and start playing
         emit loadTrackToPlayer(pTrack, kPreviewDeckGroup,
