@@ -19,6 +19,7 @@ TrackRecord::TrackRecord(TrackId id)
           m_mainCuePosition(mixxx::audio::kStartFramePos),
           m_rating(0),
           m_phraseOffset(0),
+          m_vinylBaseRate(1.0),
           m_bpmLocked(false),
           m_headerParsed(false) {
 }

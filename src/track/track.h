@@ -290,6 +290,10 @@ class Track : public QObject {
     QString getPhraseAnchors() const;
     void setPhraseAnchors(const QString& phraseAnchors);
 
+    /// Base playback rate factor under vinyl control (1.0 = as recorded).
+    double getVinylBaseRate() const;
+    void setVinylBaseRate(double vinylBaseRate);
+
     QString getURL() const;
     void setURL(const QString& url);
 
@@ -508,6 +512,7 @@ class Track : public QObject {
     void phraseOffsetUpdated(int phraseOffset);
     void phraseMarkersUpdated(const QString& phraseMarkers);
     void phraseAnchorsUpdated(const QString& phraseAnchors);
+    void vinylBaseRateUpdated(double vinylBaseRate);
     void cuesUpdated();
 #ifdef __STEM__
     void stemsUpdated();

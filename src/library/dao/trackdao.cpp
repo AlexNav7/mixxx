@@ -457,6 +457,7 @@ void TrackDAO::addTracksPrepare() {
             "phrase_offset,"
             "phrase_markers,"
             "phrase_anchors,"
+            "vinyl_base_rate,"
             "key,"
             "key_id,"
             "tuning_frequency_hz,"
@@ -509,6 +510,7 @@ void TrackDAO::addTracksPrepare() {
             ":phrase_offset,"
             ":phrase_markers,"
             ":phrase_anchors,"
+            ":vinyl_base_rate,"
             ":key,"
             ":key_id,"
             ":tuning_frequency_hz,"
@@ -617,6 +619,7 @@ void bindTrackLibraryValues(
     pTrackLibraryQuery->bindValue(":phrase_offset", track.getPhraseOffset());
     pTrackLibraryQuery->bindValue(":phrase_markers", track.getPhraseMarkers());
     pTrackLibraryQuery->bindValue(":phrase_anchors", track.getPhraseAnchors());
+    pTrackLibraryQuery->bindValue(":vinyl_base_rate", track.getVinylBaseRate());
     pTrackLibraryQuery->bindValue(":cuepoint",
             track.getMainCuePosition().toEngineSamplePosMaybeInvalid());
     pTrackLibraryQuery->bindValue(":bpm_lock", track.getBpmLocked() ? 1 : 0);
@@ -1235,6 +1238,14 @@ void setTrackPhraseAnchors(const QSqlRecord& record, const int column, Track* pT
     pTrack->setPhraseAnchors(record.value(column).toString());
 }
 
+void setTrackVinylBaseRate(const QSqlRecord& record, const int column, Track* pTrack) {
+    double baseRate = record.value(column).toDouble();
+    if (baseRate <= 0.0) {
+        baseRate = 1.0;
+    }
+    pTrack->setVinylBaseRate(baseRate);
+}
+
 void setTrackCuePoint(const QSqlRecord& record, const int column, Track* pTrack) {
     pTrack->setMainCuePosition(mixxx::audio::FramePos::fromEngineSamplePosMaybeInvalid(
             record.value(column).toDouble()));
@@ -1423,6 +1434,7 @@ TrackPointer TrackDAO::getTrackById(TrackId trackId) const {
             {"phrase_offset", setTrackPhraseOffset},
             {"phrase_markers", setTrackPhraseMarkers},
             {"phrase_anchors", setTrackPhraseAnchors},
+            {"vinyl_base_rate", setTrackVinylBaseRate},
             {"color", setTrackColor},
             {"comment", setTrackComment},
             {"url", setTrackUrl},
@@ -1737,6 +1749,7 @@ bool TrackDAO::updateTrack(const Track& track) const {
             "phrase_offset=:phrase_offset,"
             "phrase_markers=:phrase_markers,"
             "phrase_anchors=:phrase_anchors,"
+            "vinyl_base_rate=:vinyl_base_rate,"
             "key=:key,"
             "key_id=:key_id,"
             "tuning_frequency_hz=:tuning_frequency_hz,"

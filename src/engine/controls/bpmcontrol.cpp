@@ -69,13 +69,22 @@ BpmControl::BpmControl(const QString& group,
           m_bpmTapFilter(this, kBpmTapFilterLength, kBpmTapMaxInterval),
           m_tempoTapFilter(this, kBpmTapFilterLength, kBpmTapMaxInterval),
           m_dSyncInstantaneousBpm(0.0),
-          m_dLastSyncAdjustment(1.0) {
+          m_dLastSyncAdjustment(1.0),
+          m_pVCEnabled(nullptr),
+          m_pVCRateTrim(nullptr),
+          m_bUpdatingEngineBpm(false) {
     m_dSyncTargetBeatDistance.setValue(0.0);
     m_dUserOffset.setValue(0.0);
 
     m_pRateRatio = std::make_unique<ControlProxy>(group, "rate_ratio", this);
     m_pRateRatio->connectValueChanged(this, &BpmControl::slotUpdateEngineBpm,
                                       Qt::DirectConnection);
+
+    // Created by VinylControlControl before us (decks only, may be null).
+    m_pVCEnabled = ControlObject::getControl(
+            ConfigKey(group, "vinylcontrol_enabled"), ControlFlag::NoAssertIfMissing);
+    m_pVCRateTrim = ControlObject::getControl(
+            ConfigKey(group, "vinylcontrol_rate_trim"), ControlFlag::NoAssertIfMissing);
 
     m_pLocalBpm = std::make_unique<ControlObject>(ConfigKey(group, "local_bpm"));
     m_pAdjustBeatsFaster = std::make_unique<ControlPushButton>(
@@ -1148,7 +1157,9 @@ void BpmControl::slotUpdateEngineBpm(double rateRatio) {
         // This can be used to detect pitch shift issues with cloned decks
         // DEBUG_ASSERT(getGroup() != "[Channel1]" || m_pRateRatio->get(); == 1);
     }
+    m_bUpdatingEngineBpm = true;
     m_pEngineBpm->set(m_pLocalBpm->get() * rateRatio);
+    m_bUpdatingEngineBpm = false;
 }
 
 void BpmControl::slotUpdateRateSlider(double value) {
@@ -1164,6 +1175,18 @@ void BpmControl::slotUpdateRateSlider(double value) {
     }
 
     double dRateRatio = m_pEngineBpm->get() / localBpm;
+
+    if (m_pVCEnabled && m_pVCEnabled->toBool() && m_pVCRateTrim) {
+        // Under vinyl control the rate slider is overridden by the timecode.
+        // A user-requested BPM ("target BPM") becomes the per-track base rate
+        // factor instead, so the platter's 0% plays at that BPM. Ignore
+        // engine-BPM updates that merely mirror the current vinyl rate.
+        if (!m_bUpdatingEngineBpm) {
+            m_pVCRateTrim->set(math_clamp(dRateRatio, 0.25, 4.0));
+        }
+        return;
+    }
+
     m_pRateRatio->set(dRateRatio);
 }
 

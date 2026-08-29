@@ -1572,6 +1572,19 @@ void Track::setPhraseAnchors(const QString& phraseAnchors) {
     }
 }
 
+double Track::getVinylBaseRate() const {
+    const auto locked = lockMutex(&m_qMutex);
+    return m_record.getVinylBaseRate();
+}
+
+void Track::setVinylBaseRate(double vinylBaseRate) {
+    auto locked = lockMutex(&m_qMutex);
+    if (compareAndSet(m_record.ptrVinylBaseRate(), vinylBaseRate)) {
+        markDirtyAndUnlock(&locked);
+        emit vinylBaseRateUpdated(vinylBaseRate);
+    }
+}
+
 void Track::afterKeysUpdated(QT_RECURSIVE_MUTEX_LOCKER* pLock) {
     markDirtyAndUnlock(pLock);
     emit keyChanged();

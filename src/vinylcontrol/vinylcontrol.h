@@ -45,6 +45,9 @@ class VinylControl : public QObject {
     // this rate is used in engine buffer for transport
     // 1.0 = original rate
     ControlProxy* m_pVCRate;
+    // Per-track base rate factor applied on top of the timecode pitch
+    // ("target BPM" under DVS). 1.0 = play as recorded.
+    ControlProxy* m_pRateTrim;
     // Reflects the mean value (filtered for display) used of m_pVCRate during
     // VC and and is used to change the speed/pitch of the song without VC
     // 1.0 = original rate

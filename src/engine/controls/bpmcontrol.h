@@ -2,6 +2,8 @@
 
 #include <gtest/gtest_prod.h>
 
+#include <atomic>
+
 #include "control/controlobject.h"
 #include "control/controlproxy.h"
 #include "control/pollingcontrolproxy.h"
@@ -168,6 +170,15 @@ class BpmControl : public EngineControl {
 
     // The current effective BPM of the engine
     std::unique_ptr<ControlLinPotmeter> m_pEngineBpm;
+
+    // Vinyl control (owned by VinylControlControl; null for samplers etc.).
+    // Under vinyl control, a user-requested engine BPM is applied as the
+    // per-track base rate factor instead of moving the rate slider.
+    ControlObject* m_pVCEnabled;
+    ControlObject* m_pVCRateTrim;
+    // Guards against feeding engine-BPM updates that merely mirror the
+    // current rate back into the base rate factor (feedback loop).
+    std::atomic<bool> m_bUpdatingEngineBpm;
 
     // Used for bpm tapping from GUI and MIDI
     std::unique_ptr<ControlPushButton> m_pBpmTap;   // File BPM

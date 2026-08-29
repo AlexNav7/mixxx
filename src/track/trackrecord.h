@@ -61,6 +61,8 @@ class TrackRecord final {
     MIXXX_DECL_PROPERTY(QString, phraseMarkers, PhraseMarkers)
     // Mid-track phrase corrections: comma-separated "beatIndex:deltaBeats" pairs.
     MIXXX_DECL_PROPERTY(QString, phraseAnchors, PhraseAnchors)
+    // Base playback rate factor under vinyl control (1.0 = play as recorded).
+    MIXXX_DECL_PROPERTY(double, vinylBaseRate, VinylBaseRate)
     MIXXX_DECL_PROPERTY(bool, bpmLocked, BpmLocked)
 
   public:

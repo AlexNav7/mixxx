@@ -284,6 +284,17 @@ void VinylControlXwax::analyzeSamples(CSAMPLE* pSamples, size_t nFrames) {
 
     double dVinylPitch = timecoder_get_pitch(&timecoder);
 
+    // Apply the per-track base rate factor ("target BPM"): with the platter at
+    // 0% the track plays at the chosen base speed, and the physical pitch
+    // range modulates around it. Not applied in absolute mode, where the
+    // needle position dictates playback and cannot be decoupled from speed.
+    if (m_iVCMode != MIXXX_VCMODE_ABSOLUTE) {
+        const double trim = m_pRateTrim->get();
+        if (trim > 0.0 && trim != 1.0) {
+            dVinylPitch *= trim;
+        }
+    }
+
     if(bHaveSignal) {
         // Always analyze the input samples
         m_iPosition = timecoder_get_position(&timecoder, nullptr);
@@ -561,7 +572,7 @@ void VinylControlXwax::analyzeSamples(CSAMPLE* pSamples, size_t nFrames) {
                     dVinylPitch < 1.9 && dVinylPitch > 0.2) {
                 m_pRateRatio->set(dVinylPitch);
             } else {
-                m_pRateRatio->set(1.0);
+                m_pRateRatio->set(idleRateRatio());
             }
             m_dUiUpdateTime = filePosition;
         }
@@ -576,7 +587,7 @@ void VinylControlXwax::analyzeSamples(CSAMPLE* pSamples, size_t nFrames) {
         //if it hasn't been long,
         //let the track play a bit more before deciding we've stopped
 
-        m_pRateRatio->set(1.0);
+        m_pRateRatio->set(idleRateRatio());
 
         if (fabs(filePosition - m_dOldFilePos) >= 0.3 ||
                 filePosition == m_dOldFilePos) {
@@ -595,6 +606,18 @@ void VinylControlXwax::analyzeSamples(CSAMPLE* pSamples, size_t nFrames) {
             vinylStatus->set(VINYL_STATUS_OK);
         }
     }
+}
+
+// Rate ratio to report while the platter is stopped / no steady signal, so the
+// BPM display reflects the per-track base rate ("target BPM") at rest.
+double VinylControlXwax::idleRateRatio() const {
+    if (m_iVCMode != MIXXX_VCMODE_ABSOLUTE) {
+        const double trim = m_pRateTrim->get();
+        if (trim > 0.0) {
+            return trim;
+        }
+    }
+    return 1.0;
 }
 
 // returns the delta between the current drift amount and the last reset value of the drift amount.

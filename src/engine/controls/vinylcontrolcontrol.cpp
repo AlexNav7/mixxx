@@ -39,6 +39,17 @@ VinylControlControl::VinylControlControl(const QString& group, UserSettingsPoint
     m_pControlVinylRate = std::make_unique<ControlObject>(
             ConfigKey(group, QStringLiteral("vinylcontrol_rate")), this);
 
+    // Per-track base rate factor applied on top of the timecode pitch
+    // ("target BPM" under DVS). Persisted in the track (library DB).
+    m_pControlVinylRateTrim = std::make_unique<ControlObject>(
+            ConfigKey(group, QStringLiteral("vinylcontrol_rate_trim")), this);
+    m_pControlVinylRateTrim->set(1.0);
+    connect(m_pControlVinylRateTrim.get(),
+            &ControlObject::valueChanged,
+            this,
+            &VinylControlControl::slotVinylRateTrimChanged,
+            Qt::DirectConnection);
+
     m_pControlVinylScratching = std::make_unique<ControlPushButton>(
             ConfigKey(group, QStringLiteral("vinylcontrol_scratching")), this);
     m_pControlVinylScratching->set(0);
@@ -74,6 +85,22 @@ VinylControlControl::VinylControlControl(const QString& group, UserSettingsPoint
 
 void VinylControlControl::trackLoaded(TrackPointer pNewTrack) {
     m_pTrack = pNewTrack;
+    // Restore this track's saved base rate factor (1.0 when unset/no track).
+    double baseRate = pNewTrack ? pNewTrack->getVinylBaseRate() : 1.0;
+    if (baseRate <= 0.0) {
+        baseRate = 1.0;
+    }
+    m_pControlVinylRateTrim->set(baseRate);
+}
+
+void VinylControlControl::slotVinylRateTrimChanged(double trim) {
+    if (trim <= 0.0) {
+        return;
+    }
+    TrackPointer pTrack = m_pTrack;
+    if (pTrack) {
+        pTrack->setVinylBaseRate(trim);
+    }
 }
 
 void VinylControlControl::slotControlEnabledChangeRequest(double v) {

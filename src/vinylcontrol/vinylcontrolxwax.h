@@ -45,6 +45,7 @@ class VinylControlXwax : public VinylControl {
     void resetSteadyPitch(double pitch, double time);
     double checkSteadyPitch(double pitch, double time);
     double calcDeltaRelativeDriftAmount(double deltaFilePosition);
+    double idleRateRatio() const;
     void enableRecordEndMode();
     void disableRecordEndMode();
     void enableConstantMode();

@@ -613,4 +613,14 @@ reapplying those migrations.
       ALTER TABLE library ADD COLUMN phrase_anchors TEXT DEFAULT '';
     </sql>
   </revision>
+  <revision version="43" min_compatible="3">
+    <description>
+      Add vinyl_base_rate column: per-track base playback rate factor applied
+      on top of the timecode (vinyl control) pitch, so tracks recorded too
+      fast/slow can be played at a chosen base BPM under DVS.
+    </description>
+    <sql>
+      ALTER TABLE library ADD COLUMN vinyl_base_rate REAL DEFAULT 1.0;
+    </sql>
+  </revision>
 </schema>

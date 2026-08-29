@@ -3,6 +3,7 @@
 #include <QHBoxLayout>
 #include <QMouseEvent>
 #include <QStackedLayout>
+#include <QWheelEvent>
 
 #include "control/controlobject.h"
 #include "moc_wbpmeditor.cpp"
@@ -193,6 +194,21 @@ bool WBpmEditor::eventFilter(QObject* pObj, QEvent* pEvent) {
         } else if (keyEvent->key() == Qt::Key_Enter ||
                 keyEvent->key() == Qt::Key_Return) {
             applySpinboxValueAndQuit();
+        }
+    } else if (pEvent->type() == QEvent::Wheel && pObj == m_pClickOverlay.get()) {
+        // Direct wheel over the BPM display (Listen mode): nudge the engine
+        // BPM without opening the editor. ±1 BPM per notch, ±0.1 with Shift.
+        // Without vinyl control this moves the rate slider; with vinyl control
+        // it adjusts the per-track base rate ("target BPM").
+        if (m_trackLoadedCO.toBool() && m_fileBpmCO.get() > 0.0) {
+            QWheelEvent* pWheel = static_cast<QWheelEvent*>(pEvent);
+            const int deltaY = pWheel->angleDelta().y();
+            if (deltaY != 0) {
+                const double step =
+                        pWheel->modifiers().testFlag(Qt::ShiftModifier) ? 0.1 : 1.0;
+                m_bpmCO.set(m_bpmCO.get() + (deltaY > 0 ? step : -step));
+            }
+            return true;
         }
     } else if (pEvent->type() == QEvent::HoverEnter) {
         m_hideTimer.stop();

@@ -25,9 +25,11 @@ class VinylControlControl : public EngineControl {
   private slots:
     void slotControlEnabledChangeRequest(double v);
     void slotControlVinylSeek(double fractionalPos);
+    void slotVinylRateTrimChanged(double trim);
 
   private:
     std::unique_ptr<ControlObject> m_pControlVinylRate;
+    std::unique_ptr<ControlObject> m_pControlVinylRateTrim;
     std::unique_ptr<ControlObject> m_pControlVinylSeek;
     std::unique_ptr<ControlObject> m_pControlVinylSpeedType;
     std::unique_ptr<ControlObject> m_pControlVinylStatus;

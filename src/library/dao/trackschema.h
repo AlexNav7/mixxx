@@ -42,6 +42,7 @@ const QString LIBRARYTABLE_RATING = QStringLiteral("rating");
 const QString LIBRARYTABLE_PHRASE_OFFSET = QStringLiteral("phrase_offset");
 const QString LIBRARYTABLE_PHRASE_MARKERS = QStringLiteral("phrase_markers");
 const QString LIBRARYTABLE_PHRASE_ANCHORS = QStringLiteral("phrase_anchors");
+const QString LIBRARYTABLE_VINYL_BASE_RATE = QStringLiteral("vinyl_base_rate");
 const QString LIBRARYTABLE_KEY = QStringLiteral("key");
 const QString LIBRARYTABLE_KEY_ID = QStringLiteral("key_id");
 const QString LIBRARYTABLE_TUNING_FREQUENCY = QStringLiteral("tuning_frequency_hz");
