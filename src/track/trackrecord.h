@@ -57,6 +57,10 @@ class TrackRecord final {
     MIXXX_DECL_PROPERTY(mixxx::audio::FramePos, mainCuePosition, MainCuePosition)
     MIXXX_DECL_PROPERTY(int, rating, Rating)
     MIXXX_DECL_PROPERTY(int, phraseOffset, PhraseOffset)
+    // Red phrase lines: comma-separated beat indexes ("128,512").
+    MIXXX_DECL_PROPERTY(QString, phraseMarkers, PhraseMarkers)
+    // Mid-track phrase corrections: comma-separated "beatIndex:deltaBeats" pairs.
+    MIXXX_DECL_PROPERTY(QString, phraseAnchors, PhraseAnchors)
     MIXXX_DECL_PROPERTY(bool, bpmLocked, BpmLocked)
 
   public:

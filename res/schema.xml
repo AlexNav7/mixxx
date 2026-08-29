@@ -602,4 +602,15 @@ reapplying those migrations.
       ALTER TABLE library ADD COLUMN phrase_offset INTEGER DEFAULT 0;
     </sql>
   </revision>
+  <revision version="42" min_compatible="3">
+    <description>
+      Add phrase_markers (red phrase lines, comma-separated beat indexes) and
+      phrase_anchors (mid-track phrase corrections, comma-separated
+      beatIndex:deltaBeats pairs) columns for the overview phrase markers.
+    </description>
+    <sql>
+      ALTER TABLE library ADD COLUMN phrase_markers TEXT DEFAULT '';
+      ALTER TABLE library ADD COLUMN phrase_anchors TEXT DEFAULT '';
+    </sql>
+  </revision>
 </schema>

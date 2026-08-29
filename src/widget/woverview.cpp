@@ -1,13 +1,17 @@
-#include "woverview.h"
+﻿#include "woverview.h"
 
 #include <QBrush>
 #include <QColor>
+#include <QFontMetricsF>
 #include <QGuiApplication>
+#include <QMenu>
 #include <QMouseEvent>
 #include <QPaintEvent>
 #include <QPainter>
 #include <QPen>
 #include <QVBoxLayout>
+
+#include <algorithm>
 
 #include "analyzer/analyzerprogress.h"
 #include "control/controlproxy.h"
@@ -373,15 +377,78 @@ void WOverview::slotTrackLoaded(TrackPointer pTrack) {
     //qDebug() << "WOverview::slotTrackLoaded()" << m_pCurrentTrack.get() << pTrack.get();
     DEBUG_ASSERT(m_pCurrentTrack == pTrack);
     m_trackLoaded = true;
-    // Restore this track's saved phrase-line offset (stored in the library DB).
-    m_phraseOffset = 0;
-    if (m_pCurrentTrack) {
-        m_phraseOffset = m_pCurrentTrack->getPhraseOffset();
-    }
+    // Restore this track's saved phrase-line offset, red markers and phrase
+    // corrections (stored in the library DB).
+    loadPhraseData();
     if (m_pCurrentTrack) {
         updateCues(m_pCurrentTrack->getCuePoints());
     }
     update();
+}
+
+void WOverview::loadPhraseData() {
+    m_phraseOffset = 0;
+    m_phraseMarkers.clear();
+    m_phraseAnchors.clear();
+    if (!m_pCurrentTrack) {
+        return;
+    }
+    m_phraseOffset = m_pCurrentTrack->getPhraseOffset();
+
+    const QStringList markers = m_pCurrentTrack->getPhraseMarkers().split(
+            QLatin1Char(','), Qt::SkipEmptyParts);
+    for (const QString& markerStr : markers) {
+        bool ok = false;
+        const int beat = markerStr.toInt(&ok);
+        if (ok) {
+            m_phraseMarkers.append(beat);
+        }
+    }
+    std::sort(m_phraseMarkers.begin(), m_phraseMarkers.end());
+
+    const QStringList anchors = m_pCurrentTrack->getPhraseAnchors().split(
+            QLatin1Char(','), Qt::SkipEmptyParts);
+    for (const QString& anchorStr : anchors) {
+        const QStringList parts = anchorStr.split(QLatin1Char(':'));
+        if (parts.size() != 2) {
+            continue;
+        }
+        bool beatOk = false;
+        bool deltaOk = false;
+        const int beat = parts[0].toInt(&beatOk);
+        const int delta = parts[1].toInt(&deltaOk);
+        if (beatOk && deltaOk && delta != 0) {
+            m_phraseAnchors.append(PhraseAnchor{beat, delta});
+        }
+    }
+    std::sort(m_phraseAnchors.begin(),
+            m_phraseAnchors.end(),
+            [](const PhraseAnchor& a, const PhraseAnchor& b) {
+                return a.beat < b.beat;
+            });
+}
+
+void WOverview::savePhraseMarkers() {
+    if (!m_pCurrentTrack) {
+        return;
+    }
+    QStringList parts;
+    for (const int beat : std::as_const(m_phraseMarkers)) {
+        parts.append(QString::number(beat));
+    }
+    m_pCurrentTrack->setPhraseMarkers(parts.join(QLatin1Char(',')));
+}
+
+void WOverview::savePhraseAnchors() {
+    if (!m_pCurrentTrack) {
+        return;
+    }
+    QStringList parts;
+    for (const PhraseAnchor& anchor : std::as_const(m_phraseAnchors)) {
+        parts.append(QString::number(anchor.beat) + QLatin1Char(':') +
+                QString::number(anchor.delta));
+    }
+    m_pCurrentTrack->setPhraseAnchors(parts.join(QLatin1Char(',')));
 }
 
 void WOverview::slotLoadingTrack(TrackPointer pNewTrack, TrackPointer pOldTrack) {
@@ -544,6 +611,7 @@ void WOverview::receiveCuesUpdated() {
 }
 
 void WOverview::mouseMoveEvent(QMouseEvent* e) {
+    m_phraseHoverPos = e->pos();
     if (m_bLeftClickDragging) {
         if (isPosInAllowedPosDragZone(e->pos())) {
             m_bTimeRulerActive = true;
@@ -676,6 +744,9 @@ void WOverview::mousePressEvent(QMouseEvent* e) {
             m_bTimeRulerActive = false;
             unsetCursor();
         } else if (m_pHoveredMark == nullptr) {
+            if (showPhraseContextMenu(e)) {
+                return;
+            }
             m_bTimeRulerActive = true;
             m_timeRulerPos = e->pos();
         } else if (m_pHoveredMark->getHotCue() != Cue::kNoHotCue) {
@@ -711,6 +782,112 @@ void WOverview::mousePressEvent(QMouseEvent* e) {
     }
 }
 
+bool WOverview::showPhraseContextMenu(QMouseEvent* pEvent) {
+    if (!m_pCurrentTrack ||
+            (m_paintedPhraseLines.isEmpty() && m_paintedPhraseMarkers.isEmpty() &&
+                    m_paintedPhraseAnchors.isEmpty())) {
+        return false;
+    }
+    const int clickPos = m_orientation == Qt::Horizontal
+            ? pEvent->pos().x()
+            : pEvent->pos().y();
+    const int tolerance = static_cast<int>(8 * m_scaleFactor);
+
+    // Nearest red marker, phrase line and correction anchor to the click.
+    int markerBeat = -1;
+    int bestDist = tolerance + 1;
+    for (const PaintedPhraseLine& marker : std::as_const(m_paintedPhraseMarkers)) {
+        const int dist = std::abs(marker.pixelPos - clickPos);
+        if (dist < bestDist) {
+            bestDist = dist;
+            markerBeat = marker.beat;
+        }
+    }
+    int lineBeat = -1;
+    bestDist = tolerance + 1;
+    for (const PaintedPhraseLine& phraseLine : std::as_const(m_paintedPhraseLines)) {
+        const int dist = std::abs(phraseLine.pixelPos - clickPos);
+        if (dist < bestDist) {
+            bestDist = dist;
+            lineBeat = phraseLine.beat;
+        }
+    }
+    int anchorBeat = -1;
+    int anchorDelta = 0;
+    bestDist = tolerance + 1;
+    for (const PaintedPhraseAnchor& anchor : std::as_const(m_paintedPhraseAnchors)) {
+        const int dist = std::abs(anchor.pixelPos - clickPos);
+        if (dist < bestDist) {
+            bestDist = dist;
+            anchorBeat = anchor.beat;
+            anchorDelta = anchor.delta;
+        }
+    }
+    if (markerBeat < 0 && lineBeat < 0 && anchorBeat < 0) {
+        return false;
+    }
+
+    // User-facing strings in Spanish on purpose (personal fork, es_ES user).
+    QMenu menu(this);
+    if (markerBeat >= 0) {
+        menu.addAction(QStringLiteral("Quitar línea roja"), this, [this, markerBeat]() {
+            m_phraseMarkers.removeAll(markerBeat);
+            savePhraseMarkers();
+            update();
+        });
+    } else if (lineBeat >= 0) {
+        menu.addAction(QStringLiteral("Marcar línea roja"), this, [this, lineBeat]() {
+            if (!m_phraseMarkers.contains(lineBeat)) {
+                m_phraseMarkers.append(lineBeat);
+                std::sort(m_phraseMarkers.begin(), m_phraseMarkers.end());
+                savePhraseMarkers();
+            }
+            update();
+        });
+    }
+    if (anchorBeat >= 0) {
+        menu.addSeparator();
+        const QString deltaLabel =
+                (anchorDelta > 0 ? QStringLiteral("+") : QString()) +
+                QString::number(anchorDelta);
+        menu.addAction(QStringLiteral("Quitar corrección (%1)").arg(deltaLabel),
+                this,
+                [this, anchorBeat]() {
+                    m_phraseAnchors.removeIf([anchorBeat](const PhraseAnchor& a) {
+                        return a.beat == anchorBeat;
+                    });
+                    savePhraseAnchors();
+                    update();
+                });
+    } else if (lineBeat >= 0) {
+        menu.addSeparator();
+        for (const int delta : {4, 8, -4, -8}) {
+            const QString deltaLabel =
+                    (delta > 0 ? QStringLiteral("+") : QString()) +
+                    QString::number(delta);
+            menu.addAction(
+                    QStringLiteral("Corrección desde aquí: %1").arg(deltaLabel),
+                    this,
+                    [this, lineBeat, delta]() {
+                        m_phraseAnchors.append(PhraseAnchor{lineBeat, delta});
+                        std::sort(m_phraseAnchors.begin(),
+                                m_phraseAnchors.end(),
+                                [](const PhraseAnchor& a, const PhraseAnchor& b) {
+                                    return a.beat < b.beat;
+                                });
+                        savePhraseAnchors();
+                        update();
+                    });
+        }
+    }
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    menu.exec(pEvent->globalPosition().toPoint());
+#else
+    menu.exec(pEvent->globalPos());
+#endif
+    return true;
+}
+
 void WOverview::slotCueMenuPopupAboutToHide() {
     m_pHoveredMark.clear();
     update();
@@ -733,6 +910,7 @@ void WOverview::leaveEvent(QEvent* pEvent) {
     if (!m_pCueMenuPopup->isVisible()) {
         m_pHoveredMark.clear();
     }
+    m_phraseHoverPos = QPoint(-1, -1);
     m_bLeftClickDragging = false;
     m_bTimeRulerActive = false;
     update();
@@ -773,6 +951,7 @@ void WOverview::paintEvent(QPaintEvent* pEvent) {
             drawPickupPosition(&painter);
             drawTimeRuler(&painter);
             drawMarkLabels(&painter, offset, gain);
+            drawPhraseCountdown(&painter);
         }
     }
 
@@ -912,6 +1091,9 @@ void WOverview::drawMinuteMarkers(QPainter* pPainter) {
 }
 
 void WOverview::drawBeatMarkers(QPainter* pPainter) {
+    m_paintedPhraseLines.clear();
+    m_paintedPhraseMarkers.clear();
+    m_paintedPhraseAnchors.clear();
     if (!m_trackLoaded || !m_pCurrentTrack) {
         return;
     }
@@ -926,16 +1108,20 @@ void WOverview::drawBeatMarkers(QPainter* pPainter) {
 
     // A faint full-height line every N beats, to see phrases/sections at a glance.
     constexpr int kBeatsPerMarker = 32;
-    // m_phraseOffset (mouse wheel) shifts which beats get a line.
-    const int offsetMod =
-            ((m_phraseOffset % kBeatsPerMarker) + kBeatsPerMarker) % kBeatsPerMarker;
 
+    PainterScope painterScope(pPainter);
     QLineF line;
     pPainter->setPen(QPen(m_axesColor, m_scaleFactor));
     pPainter->setOpacity(0.45);
 
     const double overviewHeight = m_orientation == Qt::Horizontal ? height() : width();
 
+    // m_phraseOffset (mouse wheel) shifts which beats get a line; each phrase
+    // anchor additionally shifts all lines from its beat onward by its delta
+    // (for songs that lose 4/8 beats mid-track).
+    int effectiveOffset = m_phraseOffset;
+    int nextAnchor = 0;
+    int nextMarker = 0;
     int beatCount = 0;
     for (auto it = pBeats->iteratorFrom(mixxx::audio::kStartFramePos);
             it != pBeats->cend(); ++it, ++beatCount) {
@@ -945,18 +1131,132 @@ void WOverview::drawBeatMarkers(QPainter* pPainter) {
         if (beatSamplePos > trackSamples) {
             break;
         }
+        const int xPos = valueToPosition(beatSamplePos / trackSamples);
+        while (nextAnchor < m_phraseAnchors.size() &&
+                m_phraseAnchors[nextAnchor].beat <= beatCount) {
+            effectiveOffset += m_phraseAnchors[nextAnchor].delta;
+            m_paintedPhraseAnchors.append(PaintedPhraseAnchor{
+                    xPos, m_phraseAnchors[nextAnchor].beat, m_phraseAnchors[nextAnchor].delta});
+            ++nextAnchor;
+        }
+        while (nextMarker < m_phraseMarkers.size() &&
+                m_phraseMarkers[nextMarker] <= beatCount) {
+            if (m_phraseMarkers[nextMarker] == beatCount) {
+                m_paintedPhraseMarkers.append(PaintedPhraseLine{xPos, beatCount});
+            }
+            ++nextMarker;
+        }
+        const int offsetMod =
+                ((effectiveOffset % kBeatsPerMarker) + kBeatsPerMarker) % kBeatsPerMarker;
         if ((beatCount % kBeatsPerMarker) != offsetMod) {
             continue;
         }
-        const double xPos = valueToPosition(beatSamplePos / trackSamples);
         if (m_orientation == Qt::Horizontal) {
             line.setLine(xPos, 0.0, xPos, overviewHeight);
         } else {
             line.setLine(0.0, xPos, overviewHeight, xPos);
         }
         pPainter->drawLine(line);
+        m_paintedPhraseLines.append(PaintedPhraseLine{xPos, beatCount});
     }
-    pPainter->setOpacity(1.0);
+
+    // Red phrase lines (mix points) on top of the regular ones.
+    if (!m_paintedPhraseMarkers.isEmpty()) {
+        pPainter->setOpacity(0.9);
+        pPainter->setPen(QPen(QColor(255, 40, 40), 2 * m_scaleFactor));
+        for (const PaintedPhraseLine& marker : std::as_const(m_paintedPhraseMarkers)) {
+            if (m_orientation == Qt::Horizontal) {
+                line.setLine(marker.pixelPos, 0.0, marker.pixelPos, overviewHeight);
+            } else {
+                line.setLine(0.0, marker.pixelPos, overviewHeight, marker.pixelPos);
+            }
+            pPainter->drawLine(line);
+        }
+    }
+
+    // Always-visible "+4"/"+8" label at each phrase correction.
+    if (!m_paintedPhraseAnchors.isEmpty()) {
+        pPainter->setOpacity(1.0);
+        QFont font = pPainter->font();
+        font.setPixelSize(static_cast<int>(m_iLabelFontSize * m_scaleFactor));
+        font.setBold(true);
+        pPainter->setFont(font);
+        pPainter->setPen(QPen(QColor(255, 170, 0), m_scaleFactor));
+        for (const PaintedPhraseAnchor& anchor : std::as_const(m_paintedPhraseAnchors)) {
+            const QString label =
+                    (anchor.delta > 0 ? QStringLiteral("+") : QString()) +
+                    QString::number(anchor.delta);
+            if (m_orientation == Qt::Horizontal) {
+                pPainter->drawText(
+                        QPointF(anchor.pixelPos + 2 * m_scaleFactor,
+                                (m_iLabelFontSize + 1) * m_scaleFactor),
+                        label);
+            } else {
+                pPainter->drawText(
+                        QPointF(1, anchor.pixelPos - 2 * m_scaleFactor), label);
+            }
+        }
+    }
+}
+
+void WOverview::drawPhraseCountdown(QPainter* pPainter) {
+    // Small overlay next to the mouse cursor: how many phrase lines are left
+    // from the hovered position until the next red line. Only while hovering,
+    // and only if the track has red lines ahead of the cursor.
+    if (m_phraseHoverPos.x() < 0 || m_bLeftClickDragging || m_bTimeRulerActive ||
+            m_paintedPhraseMarkers.isEmpty() || !rect().contains(m_phraseHoverPos)) {
+        return;
+    }
+    const int hoverPos = m_orientation == Qt::Horizontal
+            ? m_phraseHoverPos.x()
+            : m_phraseHoverPos.y();
+    // Painted markers are sorted by beat, hence by position.
+    int markerPos = -1;
+    for (const PaintedPhraseLine& marker : std::as_const(m_paintedPhraseMarkers)) {
+        if (marker.pixelPos > hoverPos) {
+            markerPos = marker.pixelPos;
+            break;
+        }
+    }
+    if (markerPos < 0) {
+        return;
+    }
+    // Count remaining 32-beat blocks, not lines in between: the block right
+    // before the red line reads "1" (never "0"), one block earlier "2", etc.
+    int remaining = 1;
+    for (const PaintedPhraseLine& phraseLine : std::as_const(m_paintedPhraseLines)) {
+        if (phraseLine.pixelPos > hoverPos && phraseLine.pixelPos < markerPos) {
+            ++remaining;
+        }
+    }
+
+    PainterScope painterScope(pPainter);
+    QFont font = pPainter->font();
+    font.setPixelSize(static_cast<int>(m_iLabelFontSize * m_scaleFactor));
+    font.setBold(true);
+    pPainter->setFont(font);
+    const QString text = QString::number(remaining) + QStringLiteral(" ●");
+    const QFontMetricsF metrics(font);
+    QRectF box = metrics.boundingRect(text).adjusted(
+            -4 * m_scaleFactor, -2 * m_scaleFactor, 4 * m_scaleFactor, 2 * m_scaleFactor);
+    QPointF topLeft(m_phraseHoverPos.x() + 14 * m_scaleFactor,
+            m_phraseHoverPos.y() - box.height() - 6 * m_scaleFactor);
+    if (topLeft.x() + box.width() > width()) {
+        topLeft.setX(width() - box.width());
+    }
+    if (topLeft.y() < 0) {
+        topLeft.setY(m_phraseHoverPos.y() + 14 * m_scaleFactor);
+    }
+    box.moveTopLeft(topLeft);
+    QColor bgColor = m_labelBackgroundColor;
+    if (bgColor.alpha() == 0) {
+        bgColor = QColor(0, 0, 0, 160);
+    }
+    pPainter->setPen(Qt::NoPen);
+    pPainter->setBrush(bgColor);
+    pPainter->drawRoundedRect(box, 2 * m_scaleFactor, 2 * m_scaleFactor);
+    pPainter->setPen(QColor(255, 60, 60));
+    pPainter->drawText(box, Qt::AlignCenter, text);
 }
 
 void WOverview::drawPlayedOverlay(QPainter* pPainter) {

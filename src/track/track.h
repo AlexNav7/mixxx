@@ -282,6 +282,14 @@ class Track : public QObject {
     int getPhraseOffset() const;
     void setPhraseOffset(int);
 
+    /// Red phrase lines (comma-separated beat indexes).
+    QString getPhraseMarkers() const;
+    void setPhraseMarkers(const QString& phraseMarkers);
+
+    /// Mid-track phrase corrections (comma-separated "beatIndex:deltaBeats").
+    QString getPhraseAnchors() const;
+    void setPhraseAnchors(const QString& phraseAnchors);
+
     QString getURL() const;
     void setURL(const QString& url);
 
@@ -498,6 +506,8 @@ class Track : public QObject {
     void colorUpdated(const mixxx::RgbColor::optional_t& color);
     void ratingUpdated(int rating);
     void phraseOffsetUpdated(int phraseOffset);
+    void phraseMarkersUpdated(const QString& phraseMarkers);
+    void phraseAnchorsUpdated(const QString& phraseAnchors);
     void cuesUpdated();
 #ifdef __STEM__
     void stemsUpdated();

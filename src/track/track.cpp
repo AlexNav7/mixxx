@@ -1546,6 +1546,32 @@ void Track::setPhraseOffset(int phraseOffset) {
     }
 }
 
+QString Track::getPhraseMarkers() const {
+    const auto locked = lockMutex(&m_qMutex);
+    return m_record.getPhraseMarkers();
+}
+
+void Track::setPhraseMarkers(const QString& phraseMarkers) {
+    auto locked = lockMutex(&m_qMutex);
+    if (compareAndSet(m_record.ptrPhraseMarkers(), phraseMarkers)) {
+        markDirtyAndUnlock(&locked);
+        emit phraseMarkersUpdated(phraseMarkers);
+    }
+}
+
+QString Track::getPhraseAnchors() const {
+    const auto locked = lockMutex(&m_qMutex);
+    return m_record.getPhraseAnchors();
+}
+
+void Track::setPhraseAnchors(const QString& phraseAnchors) {
+    auto locked = lockMutex(&m_qMutex);
+    if (compareAndSet(m_record.ptrPhraseAnchors(), phraseAnchors)) {
+        markDirtyAndUnlock(&locked);
+        emit phraseAnchorsUpdated(phraseAnchors);
+    }
+}
+
 void Track::afterKeysUpdated(QT_RECURSIVE_MUTEX_LOCKER* pLock) {
     markDirtyAndUnlock(pLock);
     emit keyChanged();

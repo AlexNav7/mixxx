@@ -92,6 +92,12 @@ class WOverview : public WWidget, public TrackDropTarget {
     void drawWaveformPixmap(QPainter* pPainter);
     void drawMinuteMarkers(QPainter* pPainter);
     void drawBeatMarkers(QPainter* pPainter);
+    void drawPhraseCountdown(QPainter* pPainter);
+    // Returns true if a phrase context menu was shown (right click near a line).
+    bool showPhraseContextMenu(QMouseEvent* pEvent);
+    void loadPhraseData();
+    void savePhraseMarkers();
+    void savePhraseAnchors();
     void drawPlayedOverlay(QPainter* pPainter);
     void drawPlayPosition(QPainter* pPainter);
     void drawEndOfTrackFrame(QPainter* pPainter);
@@ -183,6 +189,32 @@ class WOverview : public WWidget, public TrackDropTarget {
     bool m_trackLoaded;
     // Offset (in beats) for the phrase lines, to align them by mouse wheel.
     int m_phraseOffset;
+    // A mid-track phrase correction: from `beat` onward the phrase lines are
+    // shifted by `delta` beats (for songs that lose 4/8 beats somewhere).
+    struct PhraseAnchor {
+        int beat;
+        int delta;
+    };
+    // Red phrase lines (mix points, beat indexes) of the current track, sorted.
+    QList<int> m_phraseMarkers;
+    // Phrase corrections of the current track, sorted by beat.
+    QList<PhraseAnchor> m_phraseAnchors;
+    // Pixel positions painted on the last paintEvent, cached for right-click
+    // hit-testing and the hover countdown overlay.
+    struct PaintedPhraseLine {
+        int pixelPos;
+        int beat;
+    };
+    struct PaintedPhraseAnchor {
+        int pixelPos;
+        int beat;
+        int delta;
+    };
+    QList<PaintedPhraseLine> m_paintedPhraseLines;
+    QList<PaintedPhraseLine> m_paintedPhraseMarkers;
+    QList<PaintedPhraseAnchor> m_paintedPhraseAnchors;
+    // Mouse position for the countdown overlay; (-1,-1) = not hovering.
+    QPoint m_phraseHoverPos = QPoint(-1, -1);
     WaveformMarkPointer m_pHoveredMark;
     double m_scaleFactor;
 
