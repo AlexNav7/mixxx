@@ -174,11 +174,12 @@ class BpmControl : public EngineControl {
     // Vinyl control (owned by VinylControlControl; null for samplers etc.).
     // Under vinyl control, a user-requested engine BPM is applied as the
     // per-track base rate factor instead of moving the rate slider.
-    ControlObject* m_pVCEnabled;
-    ControlObject* m_pVCRateTrim;
+    // In-class initializers to stay independent of the ctor init-list order.
+    ControlObject* m_pVCEnabled = nullptr;
+    ControlObject* m_pVCRateTrim = nullptr;
     // Guards against feeding engine-BPM updates that merely mirror the
     // current rate back into the base rate factor (feedback loop).
-    std::atomic<bool> m_bUpdatingEngineBpm;
+    std::atomic<bool> m_bUpdatingEngineBpm{false};
 
     // Used for bpm tapping from GUI and MIDI
     std::unique_ptr<ControlPushButton> m_pBpmTap;   // File BPM

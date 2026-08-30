@@ -42,12 +42,12 @@ WMixPad::WMixPad(QWidget* pParent, int deckNumber)
         // the OpenGL waveform viewports too — plain child widgets can't
         // (native GL windows always paint over sibling widgets).
         : QWidget(pParent, Qt::Tool | Qt::FramelessWindowHint),
+          m_activeHotcue(-1),
           m_deckNumber(deckNumber),
           m_nudgeValue(0.0),
           m_dragZone(Zone::None),
           m_dragStartRate(0.0),
           m_dragStartY(0),
-          m_activeHotcue(-1),
           m_minimized(false) {
     setObjectName(QStringLiteral("MixPad"));
     setFixedSize(kPadWidth, kPadHeight);

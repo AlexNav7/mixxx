@@ -69,10 +69,7 @@ BpmControl::BpmControl(const QString& group,
           m_bpmTapFilter(this, kBpmTapFilterLength, kBpmTapMaxInterval),
           m_tempoTapFilter(this, kBpmTapFilterLength, kBpmTapMaxInterval),
           m_dSyncInstantaneousBpm(0.0),
-          m_dLastSyncAdjustment(1.0),
-          m_pVCEnabled(nullptr),
-          m_pVCRateTrim(nullptr),
-          m_bUpdatingEngineBpm(false) {
+          m_dLastSyncAdjustment(1.0) {
     m_dSyncTargetBeatDistance.setValue(0.0);
     m_dUserOffset.setValue(0.0);
 
