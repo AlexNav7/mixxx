@@ -880,6 +880,24 @@ bool WOverview::showPhraseContextMenu(QMouseEvent* pEvent) {
                     });
         }
     }
+    // Reset entries: clear all red lines / all "+4/+8" corrections at once.
+    if (!m_phraseMarkers.isEmpty() || !m_phraseAnchors.isEmpty()) {
+        menu.addSeparator();
+        if (!m_phraseMarkers.isEmpty()) {
+            menu.addAction(QStringLiteral("Quitar TODAS las líneas rojas"), this, [this]() {
+                m_phraseMarkers.clear();
+                savePhraseMarkers();
+                update();
+            });
+        }
+        if (!m_phraseAnchors.isEmpty()) {
+            menu.addAction(QStringLiteral("Quitar TODAS las correcciones"), this, [this]() {
+                m_phraseAnchors.clear();
+                savePhraseAnchors();
+                update();
+            });
+        }
+    }
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     menu.exec(pEvent->globalPosition().toPoint());
 #else
