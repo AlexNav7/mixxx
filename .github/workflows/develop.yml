@@ -9,7 +9,8 @@ on:
       - edited
   push:
     branches:
-      - "*"
+      # "**" (not "*") so branches with slashes (feature/...) also trigger
+      - "**"
       - "!main"
       - "![0-9].[0-9]"
   workflow_dispatch:
