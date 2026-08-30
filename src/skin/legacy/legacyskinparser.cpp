@@ -37,6 +37,7 @@
 #include "widget/wbattery.h"
 #include "widget/wbeatspinbox.h"
 #include "widget/wbpmeditor.h"
+#include "widget/wmixpad.h"
 #include "widget/wcombobox.h"
 #include "widget/wcoverart.h"
 #include "widget/wcuebutton.h"
@@ -588,6 +589,22 @@ QList<QWidget*> LegacySkinParser::parseNode(const QDomElement& node) {
         result = wrapWidget(parseLabelWidget<WNumber>(node));
     } else if (nodeName == "BpmEditor") {
         result = wrapWidget(parseBpmEditor(node));
+    } else if (nodeName == "MixPad") {
+        // Floating pads (one per deck): parented to the current container but
+        // NOT inserted into its layout — they overlay the skin as frameless
+        // tool windows, each toggled via its deck's [ChannelN],mixpad_show.
+        int numDecks = static_cast<int>(ControlObject::get(
+                ConfigKey(QStringLiteral("[App]"), QStringLiteral("num_decks"))));
+        if (numDecks < 1) {
+            numDecks = 1;
+        } else if (numDecks > 4) {
+            numDecks = 4;
+        }
+        for (int deck = 1; deck <= numDecks; ++deck) {
+            WMixPad* pMixPad = new WMixPad(m_pParent, deck);
+            pMixPad->setup(node, *m_pContext);
+        }
+        // result stays null on purpose (nothing goes into the layout)
     } else if (nodeName == "NumberDb") {
         result = wrapWidget(parseLabelWidget<WNumberDb>(node));
     } else if (nodeName == "Label") {

@@ -14,6 +14,17 @@
         <MaximumSize>360,</MaximumSize>
         <Children>
 
+          <!-- mouse-deck-nudge: opens this deck's floating mix pad -->
+          <Template src="skins:LateNight3Decks/controls/button_2state.xml">
+            <SetVariable name="TooltipId">toggle_4decks</SetVariable>
+            <SetVariable name="ObjectName">GuiToggleButton</SetVariable>
+            <SetVariable name="Size">36f,26f</SetVariable>
+            <SetVariable name="state_0_text">PAD</SetVariable>
+            <SetVariable name="state_1_text">PAD</SetVariable>
+            <SetVariable name="ConfigKey"><Variable name="Group"/>,mixpad_show</SetVariable>
+          </Template>
+          <WidgetGroup><Size>2f,0min</Size></WidgetGroup>
+
           <WidgetGroup><!-- Play + PlayBlink + default dark background -->
             <Layout>stacked</Layout>
             <Size>68f,26f</Size>

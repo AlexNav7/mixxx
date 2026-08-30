@@ -575,6 +575,10 @@
           </Children>
         </WidgetGroup><!-- regular/maximized library + skin settings menu -->
 
+        <!-- mouse-deck-nudge: floating mix pad (NOT in the layout, overlays
+             everything; toggled via [MixPad],show — PAD button in toolbar) -->
+        <MixPad/>
+
       </Children>
     </WidgetGroup>
   </Children>
