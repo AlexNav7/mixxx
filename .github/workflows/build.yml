@@ -144,34 +144,9 @@ jobs:
             artifacts_path: build/*.msi
             artifacts_slug: windows-win64
             arch: x64
-          - name: Windows 11 VS2026 ARM64
-            os: windows-11-vs2026-arm
-            # Attention: If you change the cmake_args for the Windows CI build,
-            #            also adjust the for the local Windows build setup in
-            #            ./tools/windows_buildenv.bat
-            cmake_args: >-
-              -DBULK=ON
-              -DHSS1394=ON
-              -DLOCALECOMPARE=ON
-              -DMAD=ON
-              -DMEDIAFOUNDATION=ON
-              -DMODPLUG=ON
-              -DQT6=ON
-              -DQML=ON
-              -DWAVPACK=ON
-              -DVCPKG_TARGET_TRIPLET=arm64-windows-release
-              -DVCPKG_DEFAULT_HOST_TRIPLET=arm64-windows-release
-            cc: cl
-            cxx: cl
-            # TODO: Fix these broken tests on Windows
-            ctest_args: --exclude-regex '^AutoDJProcessorTest.*$'
-            cpack_generator: WIX
-            buildenv_basepath: C:\buildenv
-            buildenv_script: tools/windows_buildenv.bat
-            artifacts_name: Windows ARM64 Installer
-            artifacts_path: build/*.msi
-            artifacts_slug: windows-winarm
-            arch: arm64
+          # Windows ARM64 entry removed on this fork (we only use x64; the
+          # job was failing and burning CI time). Restore from upstream's
+          # build.yml if ever needed.
           - name: Android 15 arm64
             os: ubuntu-24.04
             # DBUILD_TESTING=OFF: error: OpenMP support and version of OpenMP (31, 40 or 45) differs
@@ -665,6 +640,9 @@ jobs:
 
   build-flatpak:
     name: "Flatpak"
+    # Disabled on this fork: flaky xvfb test run on aarch64 and we don't ship
+    # Flatpak. Remove this line to re-enable (e.g. before upstreaming).
+    if: ${{ false }}
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
       options: --privileged
