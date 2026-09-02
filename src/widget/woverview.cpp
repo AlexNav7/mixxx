@@ -862,11 +862,11 @@ bool WOverview::showPhraseContextMenu(QMouseEvent* pEvent) {
     } else if (lineBeat >= 0) {
         menu.addSeparator();
         for (const int delta : {4, 8, -4, -8}) {
-            const QString deltaLabel =
-                    (delta > 0 ? QStringLiteral("+") : QString()) +
-                    QString::number(delta);
+            const QString deltaLabel = delta > 0
+                    ? QStringLiteral("Hay %1 golpes de más aquí (+%1)").arg(delta)
+                    : QStringLiteral("Faltan %1 golpes aquí (−%1)").arg(-delta);
             menu.addAction(
-                    QStringLiteral("Corrección desde aquí: %1").arg(deltaLabel),
+                    deltaLabel,
                     this,
                     [this, lineBeat, delta]() {
                         m_phraseAnchors.append(PhraseAnchor{lineBeat, delta});
@@ -1150,11 +1150,18 @@ void WOverview::drawBeatMarkers(QPainter* pPainter) {
             break;
         }
         const int xPos = valueToPosition(beatSamplePos / trackSamples);
-        while (nextAnchor < m_phraseAnchors.size() &&
-                m_phraseAnchors[nextAnchor].beat <= beatCount) {
-            effectiveOffset += m_phraseAnchors[nextAnchor].delta;
+        // An anchor at beat L with delta d means: right after the line at L
+        // there are d extra beats slipped in (a short bridge). The line at L
+        // stays put and gets the "+d" label, the next line comes d beats
+        // later (right after the bridge), and from there every 32 again.
+        if (nextAnchor < m_phraseAnchors.size() &&
+                m_phraseAnchors[nextAnchor].beat == beatCount) {
             m_paintedPhraseAnchors.append(PaintedPhraseAnchor{
-                    xPos, m_phraseAnchors[nextAnchor].beat, m_phraseAnchors[nextAnchor].delta});
+                    xPos, beatCount, m_phraseAnchors[nextAnchor].delta});
+        }
+        while (nextAnchor < m_phraseAnchors.size() &&
+                m_phraseAnchors[nextAnchor].beat < beatCount) {
+            effectiveOffset += m_phraseAnchors[nextAnchor].delta;
             ++nextAnchor;
         }
         while (nextMarker < m_phraseMarkers.size() &&
