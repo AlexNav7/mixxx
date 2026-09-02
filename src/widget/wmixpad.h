@@ -23,11 +23,13 @@ class WMixPad : public QWidget {
     void setup(const QDomNode& node, const SkinContext& context);
 
   protected:
+    // App-level filter: Up/Down keys act on the strip under the mouse cursor
+    // (installed on qApp so it runs before Mixxx's global keyboard mapping).
+    bool eventFilter(QObject* pObj, QEvent* pEvent) override;
     void paintEvent(QPaintEvent* pEvent) override;
     void mousePressEvent(QMouseEvent* pEvent) override;
     void mouseMoveEvent(QMouseEvent* pEvent) override;
     void mouseReleaseEvent(QMouseEvent* pEvent) override;
-    void mouseDoubleClickEvent(QMouseEvent* pEvent) override;
     void wheelEvent(QWheelEvent* pEvent) override;
     void showEvent(QShowEvent* pEvent) override;
 
@@ -70,6 +72,7 @@ class WMixPad : public QWidget {
     std::unique_ptr<ControlProxy> m_pShowProxy;
     // Proxies for this pad's deck.
     std::unique_ptr<ControlProxy> m_pRate;
+    std::unique_ptr<ControlProxy> m_pRateDir;
     std::unique_ptr<ControlProxy> m_pJog;
     std::unique_ptr<ControlProxy> m_pPlay;
     std::unique_ptr<ControlProxy> m_pCue;

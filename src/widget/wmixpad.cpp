@@ -1,5 +1,8 @@
 ﻿#include "widget/wmixpad.h"
 
+#include <QApplication>
+#include <QCursor>
+#include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QWheelEvent>
@@ -10,13 +13,14 @@
 
 namespace {
 
-constexpr int kPadWidth = 184;
+constexpr int kPadWidth = 220;
+// Height of the small CUE (set/preview) button under the big stop-and-back.
+constexpr int kCueSmallHeight = 24;
 constexpr int kPadHeight = 374;
 constexpr int kHeaderHeight = 24;
 constexpr int kMargin = 8;
 constexpr int kHotcueHeight = 28;
-// Bottom of the main zones (strips/buttons); below sits the hotcue row.
-constexpr int kBodyBottom = kPadHeight - kMargin - kHotcueHeight - 6;
+constexpr int kBodyBottom = kPadHeight - kMargin;
 
 // Nudge strength: jog value per pixel of drag displacement (the engine
 // multiplies the filtered jog by 0.1 to obtain the rate offset).
@@ -67,8 +71,44 @@ WMixPad::WMixPad(QWidget* pParent, int deckNumber)
     m_nudgeTimer.setInterval(kNudgeTickMs);
     connect(&m_nudgeTimer, &QTimer::timeout, this, &WMixPad::slotNudgeTick);
 
+    // Intercept Up/Down before Mixxx's global keyboard mapping (app filters
+    // run in reverse install order, and the keyboard filter is installed at
+    // startup) — but only while the cursor hovers one of our strips.
+    qApp->installEventFilter(this);
+
     updateDeckProxies();
     setVisible(m_pShowProxy->toBool());
+}
+
+bool WMixPad::eventFilter(QObject* pObj, QEvent* pEvent) {
+    if (pEvent->type() == QEvent::KeyPress && isVisible() && !m_minimized) {
+        QKeyEvent* pKeyEvent = static_cast<QKeyEvent*>(pEvent);
+        const int key = pKeyEvent->key();
+        if (key == Qt::Key_Up || key == Qt::Key_Down) {
+            const QPoint local = mapFromGlobal(QCursor::pos());
+            if (rect().contains(local)) {
+                const bool up = (key == Qt::Key_Up);
+                const Zone zone = zoneAt(local);
+                if (zone == Zone::Nudge) {
+                    // One key press (or auto-repeat tick) = one small push,
+                    // like a wheel notch; holding the key keeps pushing.
+                    sendWheelNudge(up ? 120 : -120);
+                    return true;
+                }
+                if (zone == Zone::Pitch && m_pRate) {
+                    // Fine pitch step, same direction as dragging the strip.
+                    constexpr double kKeyPitchStep = 0.01;
+                    m_pRate->set(math_clamp(
+                            m_pRate->get() + (up ? kKeyPitchStep : -kKeyPitchStep),
+                            -1.0,
+                            1.0));
+                    update();
+                    return true;
+                }
+            }
+        }
+    }
+    return QWidget::eventFilter(pObj, pEvent);
 }
 
 void WMixPad::setup(const QDomNode& node, const SkinContext& context) {
@@ -80,6 +120,8 @@ void WMixPad::updateDeckProxies() {
     const QString& group = m_group;
     m_pRate = std::make_unique<ControlProxy>(group, QStringLiteral("rate"));
     m_pRate->connectValueChanged(this, &WMixPad::slotDeckUpdate);
+    // Rate slider direction preference: -1 = down increases speed (Technics).
+    m_pRateDir = std::make_unique<ControlProxy>(group, QStringLiteral("rate_dir"));
     m_pJog = std::make_unique<ControlProxy>(group, QStringLiteral("jog"));
     m_pPlay = std::make_unique<ControlProxy>(group, QStringLiteral("play"));
     m_pPlay->connectValueChanged(this, &WMixPad::slotDeckUpdate);
@@ -167,33 +209,45 @@ QRect WMixPad::pitchRect() const {
             kBodyBottom - kHeaderHeight - kMargin);
 }
 
-QRect WMixPad::playRect() const {
-    const int x = kMargin + 56 + 6 + 56 + 6;
-    const int top = kHeaderHeight + kMargin;
+// Right column, top to bottom: big PLAY, big stop-and-back-to-cue,
+// small CUE (set/preview), 2x2 hotcue grid.
+namespace {
+constexpr int kColumnX = kMargin + 56 + 6 + 56 + 6;
+inline int bigButtonHeight() {
     const int totalH = kBodyBottom - kHeaderHeight - kMargin;
-    return QRect(x, top, width() - x - kMargin, (totalH - 12) / 3);
+    const int hotcueGridH = 2 * kHotcueHeight + 6;
+    return (totalH - kCueSmallHeight - hotcueGridH - 18) / 2;
+}
+} // anonymous namespace
+
+QRect WMixPad::playRect() const {
+    return QRect(kColumnX,
+            kHeaderHeight + kMargin,
+            width() - kColumnX - kMargin,
+            bigButtonHeight());
 }
 
-// Button order (top to bottom): PLAY, stop-and-back-to-cue, CUE.
 QRect WMixPad::stopCueRect() const {
-    const int x = kMargin + 56 + 6 + 56 + 6;
-    const int top = kHeaderHeight + kMargin;
-    const int totalH = kBodyBottom - kHeaderHeight - kMargin;
-    const int third = (totalH - 12) / 3;
-    return QRect(x, top + third + 6, width() - x - kMargin, third);
+    return QRect(kColumnX,
+            kHeaderHeight + kMargin + bigButtonHeight() + 6,
+            width() - kColumnX - kMargin,
+            bigButtonHeight());
 }
 
 QRect WMixPad::cueRect() const {
-    const int x = kMargin + 56 + 6 + 56 + 6;
-    const int top = kHeaderHeight + kMargin;
-    const int totalH = kBodyBottom - kHeaderHeight - kMargin;
-    const int third = (totalH - 12) / 3;
-    return QRect(x, top + 2 * (third + 6), width() - x - kMargin, totalH - 2 * (third + 6));
+    return QRect(kColumnX,
+            kHeaderHeight + kMargin + 2 * (bigButtonHeight() + 6),
+            width() - kColumnX - kMargin,
+            kCueSmallHeight);
 }
 
 QRect WMixPad::hotcueRect(int index) const {
-    const int w = (width() - 2 * kMargin - 3 * 6) / kHotcueCount;
-    return QRect(kMargin + index * (w + 6), kBodyBottom + 6, w, kHotcueHeight);
+    const int colW = width() - kColumnX - kMargin;
+    const int w = (colW - 6) / 2;
+    const int row = index / 2;
+    const int col = index % 2;
+    const int top = cueRect().bottom() + 7 + row * (kHotcueHeight + 6);
+    return QRect(kColumnX + col * (w + 6), top, w, kHotcueHeight);
 }
 
 int WMixPad::hotcueAt(const QPoint& pos) const {
@@ -388,14 +442,6 @@ void WMixPad::mouseReleaseEvent(QMouseEvent* pEvent) {
     update();
 }
 
-void WMixPad::mouseDoubleClickEvent(QMouseEvent* pEvent) {
-    // Double click on the pitch strip resets the pitch to 0%.
-    if (zoneAt(pEvent->pos()) == Zone::Pitch && m_pRate) {
-        m_pRate->set(0.0);
-        update();
-    }
-}
-
 void WMixPad::wheelEvent(QWheelEvent* pEvent) {
     // The wheel nudges anywhere on the pad — including while the pitch fader
     // is grabbed (index finger drags, middle finger pushes: the "two hands on
@@ -457,6 +503,18 @@ void WMixPad::paintEvent(QPaintEvent* pEvent) {
     p.drawRoundedRect(QRect(pitch.left() + 3, handleY - 4, pitch.width() - 6, 8), 2, 2);
     p.setPen(kTextColor);
     p.drawText(pitch.adjusted(0, 4, 0, 0), Qt::AlignHCenter | Qt::AlignTop, QStringLiteral("PITCH"));
+    // +/- direction hints following the user's rate slider direction
+    // preference (rate_dir = -1 means down increases speed, Technics style).
+    {
+        const bool downIsFaster = m_pRateDir && m_pRateDir->get() < 0;
+        p.setPen(kPitchAccent);
+        p.drawText(QRect(pitch.left(), pitch.top() + 16, pitch.width(), 14),
+                Qt::AlignCenter,
+                downIsFaster ? QStringLiteral("−") : QStringLiteral("+"));
+        p.drawText(QRect(pitch.left(), pitch.bottom() - 18, pitch.width(), 14),
+                Qt::AlignCenter,
+                downIsFaster ? QStringLiteral("+") : QStringLiteral("−"));
+    }
 
     // Nudge strip
     const QRect nudge = nudgeRect();
@@ -479,11 +537,17 @@ void WMixPad::paintEvent(QPaintEvent* pEvent) {
                 2);
     }
     p.setPen(m_dragZone == Zone::Nudge ? kNudgeAccent : kTextColor);
-    p.save();
-    p.translate(nudge.center().x() + 4, nudge.center().y() + 24);
-    p.rotate(-90);
-    p.drawText(QRect(-40, -8, 80, 16), Qt::AlignCenter, QStringLiteral("MENEO"));
-    p.restore();
+    p.drawText(nudge.adjusted(0, 4, 0, 0),
+            Qt::AlignHCenter | Qt::AlignTop,
+            QStringLiteral("MENEO"));
+    // +/- hints: dragging up always pushes forward (faster).
+    p.setPen(kNudgeAccent);
+    p.drawText(QRect(nudge.left(), nudge.top() + 16, nudge.width(), 14),
+            Qt::AlignCenter,
+            QStringLiteral("+"));
+    p.drawText(QRect(nudge.left(), nudge.bottom() - 18, nudge.width(), 14),
+            Qt::AlignCenter,
+            QStringLiteral("−"));
 
     // Play zone
     const QRect play = playRect();
